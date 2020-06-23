@@ -26,7 +26,10 @@ class DQfD(Policy):
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json'), 'r') as f:
             cfg = json.load(f)
         self.gamma = cfg['gamma']
-        self.epsilon = cfg['epsilon']
+        self.epsilon_init = cfg['epsilon_init']
+        self.epsilon_final = cfg['epsilon_final']
+        self.epsilon = self.epsilon_init
+        self.epsilon_degrade_period = cfg['epsilon_degrade_period']
         self.tau = cfg['tau']
         self.action_number = cfg['action_number']  # total number of actions considered
         init_logging_handler(os.path.join(os.path.dirname(os.path.abspath(__file__)), cfg['log_dir']))
