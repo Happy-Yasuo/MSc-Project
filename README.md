@@ -1,6 +1,9 @@
 # Imitation learning for task-oriented dialogue system
 This work is based on ConvLab-2 framework.
 
+## Algorithms
+[DQfD](https://github.com/Happy-Yasuo/MSc-Project/convlab2/policy/dqn)
+
 ## Experiment Result
 MLE is a supervised learning method which uses a simple feed forward network to fit the relationship between states and actions. It can be considered as a simple imitation learning and give PPO a warm start.
 
