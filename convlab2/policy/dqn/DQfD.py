@@ -6,7 +6,7 @@ import logging
 import os
 import json
 from convlab2.policy.policy import Policy
-from convlab2.policy.net import duel_Q_network
+from convlab2.policy.DQNModule import DuelDQN, read_action_map
 from convlab2.util.train_util import init_logging_handler
 from convlab2.policy.vector.vector_multiwoz import MultiWozVector
 from convlab2.util.file_util import cached_path
@@ -21,134 +21,108 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class DQfD(Policy):
 
-    def __init__(self, is_train=False, dataset='Multiwoz'):
-
+    def __init__(self, dataset='Multiwoz'):
+        # load configuration file
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json'), 'r') as f:
             cfg = json.load(f)
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mapping_action.json'), 'r') as f2:
-            self.mapping_action_file = list(json.load(f2).values())
-        self.save_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), cfg['save_dir'])
         self.gamma = cfg['gamma']
         self.epsilon = cfg['epsilon']
         self.tau = cfg['tau']
-        self.is_train = is_train
-        if is_train:
-            init_logging_handler(os.path.join(os.path.dirname(os.path.abspath(__file__)), cfg['log_dir']))
-
+        self.action_number = cfg['action_number']  # total number of actions considered
+        init_logging_handler(os.path.join(os.path.dirname(os.path.abspath(__file__)), cfg['log_dir']))
+        # load action mapping file
+        action_map_file = os.path.join(root_dir, 'convlab2/policy/position_dict.json')
+        _, self.act_vec_dict = read_action_map(action_map_file)
+        # load vector for MultiWoz 2.1
         if dataset == 'Multiwoz':
             voc_file = os.path.join(root_dir, 'data/multiwoz/sys_da_voc.txt')
             voc_opp_file = os.path.join(root_dir, 'data/multiwoz/usr_da_voc.txt')
             self.vector = MultiWozVector(voc_file, voc_opp_file)
-            # total number of actions considered
-            self.action_number = cfg['action_number']
-            # current Q network to be trained
-            self.Q = duel_Q_network(self.vector.state_dim, cfg['h_dim'], self.action_number).to(device=DEVICE)
-            # target Q network
-            self.target_Q = duel_Q_network(self.vector.state_dim, cfg['h_dim'], self.action_number).to(device=DEVICE)
-
-        if is_train:
-            self.optimizer = optim.Adam(self.Q.parameters(), lr=cfg['lr'], weight_decay=cfg['weight_decay'])
-            self.criterion = torch.nn.MSELoss()
+        # build Q network
+        # current Q network to be trained
+        self.Q = DuelDQN(self.vector.state_dim, cfg['h_dim'], self.action_number).to(device=DEVICE)
+        # target Q network
+        self.target_Q = DuelDQN(self.vector.state_dim, cfg['h_dim'], self.action_number).to(device=DEVICE)
+        # define optimizer
+        self.optimizer = optim.Adam(self.Q.parameters(), lr=cfg['lr'], weight_decay=cfg['weight_decay'])
+        # loss function
+        self.criterion = torch.nn.MSELoss()
 
     def predict(self, state):
-        """
-        Predict an system action given state.
-        Args:
-            state (dict): Dialog state. Please refer to util/state.py
-        Returns:
-            action : System act, with the form of (act_type, {slot_name_1: value_1, slot_name_2, value_2, ...})
-        """
+        """Predict an system action and its index given state."""
         s_vec = torch.Tensor(self.vector.state_vectorize(state))
-        a = self.Q.select_action(s_vec.to(device=DEVICE), self.epsilon, self.mapping_action_file, self.vector.da_dim).cpu()
-        action = self.vector.action_devectorize(a.numpy())
+        a, a_ind = self.Q.select_action(s_vec.to(device=DEVICE), self.epsilon, self.act_vec_dict)
+        action = self.vector.action_devectorize(a)
         state['system_action'] = action
-        return action
+        return action, a_ind
+
+    def predict_ind(self, state):
+        """Predict an action index action space given state."""
+        s_vec = torch.Tensor(self.vector.state_vectorize(state))
+        a_ind = self.Q.select_action_ind(s_vec.to(device=DEVICE), self.epsilon, self.act_vec_dict).cpu()
+        return a_ind
 
     def init_session(self):
-        """
-        Restore after one session
-        """
+        """Restore after one session"""
         pass
 
-    def act_diff(self, batch_a_e):
-        """
-        :param batch_a_e: a batch of actions taken by expert
-        :return: [batch_len, tot_action_num]
-        """
-        act_diff = torch.zeros([len(batch_a_e), self.action_number])
-        act_diff[list(range(len(batch_a_e))), batch_a_e] = self.tau
-        return act_diff
-
-    def aux_loss(self, s, expert_s_lst, expert_a):
-        """
-        s: state tensor
-        expert_s_lst: list of state of expert
-        expert_a: list of actions taken by expert
-        """
-
-        batch_s = []
-        batch_a_e = []
-        batch_a_e_gather = []
-        s_array = s.cpu().numpy()
-        for batch_id in range(s.size(0)):
-            s_lst = list(s_array[batch_id])
-            # only keep those states can be found in expert demonstration
-            if s_lst in expert_s_lst:
-                act_expert_index = self.Q.act2ind(expert_a[expert_s_lst.index(s_lst)], self.mapping_action_file)
-                batch_s.append(s_array[batch_id])
-                batch_a_e.append(act_expert_index)
-                batch_a_e_gather.append([act_expert_index])
-        new_s = torch.from_numpy(np.stack(batch_s)).to(device=DEVICE)
-        new_q_preds = self.Q.forward(new_s)
-        diff = self.act_diff(batch_a_e).to(device=DEVICE)
-        max_act_q_preds = torch.max((new_q_preds + diff), dim=1)[0]
-        expert_act_q_preds = new_q_preds.gather(-1, torch.tensor(batch_a_e_gather).to(device=DEVICE)).squeeze(-1)
-        aux_loss = (max_act_q_preds - expert_act_q_preds).sum() / s.size(0)
+    def aux_loss(self, s, a, expert_label):
+        """compute auxiliary loss given batch of states, actions and expert labels"""
+        # only keep those expert demonstrations by setting expert label to 1
+        s_exp = s[np.where(expert_label == 1)[0]]
+        a_exp = a[np.where(expert_label == 1)[0]]
+        # if there exist expert demonstration in current batch
+        if s_exp.size(0) > 0:
+            # compute q value predictions for states for each action
+            q_all = self.Q(s_exp)
+            # only when agent take the same action as the expert does, the act_diff term(i.e. l(a_e,a)) is 0
+            act_diff = q_all.new_full(q_all.size(), self.tau)
+            act_diff[list(range(q_all.size(0))), a_exp] = 0
+            # aux_loss = max(Q(s, a) + l(a_e, a)) - Q(s, a_e)
+            q_max_act = (q_all + act_diff).max(dim=1)[0]
+            q_exp_act = q_all.gather(-1, a_exp.unsqueeze(1)).squeeze(-1)
+            aux_loss = (q_max_act - q_exp_act).sum() / s_exp.size(0)
+        else:
+            aux_loss = 0
         return aux_loss
 
     def update_net(self):
+        """update target network by copying parameters from online network"""
         self.target_Q.load_state_dict(self.Q.state_dict())
 
-    def update(self, batchsz, s, a, r, s_next, mask, expert_s_lst, expert_a):
-
-        batch_act = a.cpu().numpy()
-        act_index = []
-        retain_index = []
-        for i in range(batchsz):
-            # action: vector form => index in Q value vector
-            # only keep actions in action space of mapping action file and
-            # corresponding state, reward, next state and mask
-            cur_act_ind = self.Q.act2ind(batch_act[i], self.mapping_action_file)
-            if cur_act_ind:
-                retain_index.append(i)
-                act_index.append([cur_act_ind])
-        action_idx = torch.tensor(act_index).to(device=DEVICE)
-
-        q_preds = self.Q.forward(s[retain_index])
+    def compute_loss(self, s, a, r, s_next, mask, expert_label):
+        """compute loss for batch"""
+        # q value predictions for current state for each action
+        q_preds = self.Q(s)
         with torch.no_grad():
             # online net for action selection in next state
-            online_next_q_preds = self.Q.forward(s_next[retain_index])
+            online_next_q_preds = self.Q(s_next)
             # target net for q value predicting in the next state
-            next_q_preds = self.target_Q.forward(s_next[retain_index])
-        act_q_preds = q_preds.gather(-1, action_idx).squeeze(-1)
+            next_q_preds = self.target_Q(s_next)
+        # select q value predictions for corresponding actions
+        act_q_preds = q_preds.gather(-1, a.unsqueeze(1)).squeeze(-1)
         # use online net to choose action for the next state
         online_actions = online_next_q_preds.argmax(dim=-1, keepdim=True)
         # use target net to predict the corresponding value
         max_next_q_preds = next_q_preds.gather(-1, online_actions).squeeze(-1)
-        max_q_targets = r[retain_index] + self.gamma * max_next_q_preds * mask[retain_index]
+        # compute target q values
+        max_q_targets = r + self.gamma * max_next_q_preds * mask
+        # q loss
         q_loss = self.criterion(act_q_preds, max_q_targets)
-        try:
-            aux_loss_term = self.aux_loss(s[retain_index], expert_s_lst, expert_a)  # get expert demo
-            loss = q_loss + aux_loss_term
-        except:
-            print('aux loss not applicable')
-            loss = q_loss
-        print('Training loss: %.3f' %loss)
+        # auxiliary loss
+        aux_loss_term = self.aux_loss(s, a, expert_label)
+        # total loss
+        loss = q_loss + aux_loss_term
+        return loss
+
+    def update(self, loss):
+        """update online network"""
         self.optimizer.zero_grad()
         loss.backward()
         self.optimizer.step()
 
     def save(self, directory, epoch):
+        """save model to directory"""
         if not os.path.exists(directory):
             os.makedirs(directory)
 
@@ -157,6 +131,7 @@ class DQfD(Policy):
         logging.info('<<dialog policy>> epoch {}: saved network to mdl'.format(epoch))
     
     def load(self, filename):
+        """load model"""
         dqn_mdl_candidates = [
             filename + '_dqn.mdl',
             os.path.join(os.path.dirname(os.path.abspath(__file__)), filename + '_dqn.mdl')
@@ -167,4 +142,3 @@ class DQfD(Policy):
                 self.target_Q.load_state_dict(torch.load(dqn_mdl, map_location=DEVICE))
                 logging.info('<<dialog policy>> loaded checkpoint from file: {}'.format(dqn_mdl))
                 break
-
