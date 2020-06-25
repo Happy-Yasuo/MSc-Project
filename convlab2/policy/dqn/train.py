@@ -23,7 +23,7 @@ except RuntimeError:
     pass
 
 
-def sampler(pid, queue, evt, env, policy, vector, position_dict, batchsz, expert):
+def sampler(pid, queue, evt, env, policy, vector, act2ind_dict, batchsz, expert):
     """
     This is a sampler function, and it will be called by multiprocess.Process to sample data from environment by multiple
     processes.
@@ -34,7 +34,7 @@ def sampler(pid, queue, evt, env, policy, vector, position_dict, batchsz, expert
     :param policy: policy network, to generate action from current policy
     :param batchsz: total sampled items
     :param vector: MultiWoz vector
-    :param position_dict: a dictionary mapping action index to action positions in a 209-dimension vector
+    :param act2ind_dict: a dictionary mapping action index to action positions in a 209-dimension vector
     :param expert: True/False means if an expert policy is used
     :return:
     """
@@ -60,7 +60,7 @@ def sampler(pid, queue, evt, env, policy, vector, position_dict, batchsz, expert
                 a = policy.predict(s)
                 a_vec = vector.action_vectorize(a)
                 # transform expert action to one of 319 actions in action space
-                a_ind = expert_act_vec2ind(list(np.where(a_vec == 1)[0]), position_dict)
+                a_ind = expert_act_vec2ind(tuple(np.where(a_vec == 1)[0]), act2ind_dict)
             else:
                 # [s_dim] => [a_dim]
                 s_vec = torch.Tensor(policy.vector.state_vectorize(s))
@@ -97,7 +97,7 @@ def sampler(pid, queue, evt, env, policy, vector, position_dict, batchsz, expert
     evt.wait()
 
 
-def sample(env, policy, batchsz, expert, vector, position_dict, process_num):
+def sample(env, policy, batchsz, expert, vector, act2ind_dict, process_num):
     """
     Given batchsz number of task, the batchsz will be splited equally to each processes
     and when processes return, it merge all data and return
@@ -106,7 +106,7 @@ def sample(env, policy, batchsz, expert, vector, position_dict, process_num):
     :param batchsz:
     :param process_num:
     :param vector: MultiWoz vector
-    :param position_dict: a dictionary mapping action index to action positions in a 209-dimension vector
+    :param act2ind_dict: a dictionary mapping action action positions in a 209-dimension vector to a action index
     :param expert: True/False means if an expert policy is used
     :return: buff
     """
@@ -127,7 +127,7 @@ def sample(env, policy, batchsz, expert, vector, position_dict, process_num):
     evt = mp.Event()
     processes = []
     for i in range(process_num):
-        process_args = (i, queue, evt, env, policy, vector, position_dict, process_batchsz, expert)
+        process_args = (i, queue, evt, env, policy, vector, act2ind_dict, process_batchsz, expert)
         processes.append(mp.Process(target=sampler, args=process_args))
     for p in processes:
         # set the process as daemon, and it will be killed once the main process is stoped.
@@ -147,7 +147,7 @@ def sample(env, policy, batchsz, expert, vector, position_dict, process_num):
     return buff
 
 
-def pretrain(env, expert_policy, policy, vector, position_dict, batchsz, process_num):
+def pretrain(env, expert_policy, policy, vector, act2ind_dict, batchsz, process_num):
     """
     pre-train agent policy
     :param env:
@@ -166,7 +166,7 @@ def pretrain(env, expert_policy, policy, vector, position_dict, batchsz, process
     dialog_num = 2000  # total number of dialogs required to sample
     while sampled_dialog_num < dialog_num:
         # achieve a buffer stored expert demonstrations
-        new_buff = sample(env, expert_policy, batchsz, True, vector, position_dict, process_num)
+        new_buff = sample(env, expert_policy, batchsz, True, vector, act2ind_dict, process_num)
         cur_frames_num = len(list(new_buff.get_batch().mask))
         cur_dialog_num = list(new_buff.get_batch().mask).count(0)
         # put expert demonstrations to pre-fill buffer
@@ -196,9 +196,9 @@ def pretrain(env, expert_policy, policy, vector, position_dict, batchsz, process
     return prefill_buff
 
 
-def train_update(prefill_buff, env, policy, vector, position_dict, batchsz, epoch, process_num):
+def train_update(prefill_buff, env, policy, vector, act2ind_dict, batchsz, epoch, process_num):
     # achieve a buffer stored real agent experience
-    new_buff = sample(env, policy, batchsz, False, vector, position_dict, process_num)
+    new_buff = sample(env, policy, batchsz, False, vector, act2ind_dict, process_num)
     # put real agent experience to pre-fill buffer while keep total transition number under maximum (100,000)
     prefill_buff.append(new_buff, False)
     train_loss = 0
@@ -222,10 +222,10 @@ def train_update(prefill_buff, env, policy, vector, position_dict, batchsz, epoc
         train_loss += cur_loss
         # update
         policy.update(cur_loss)
-    if epoch % 9 == 0:
+    if epoch % 10 == 0:
         # update target network
         policy.update_net()
-    if epoch % 9 == 0:
+    if epoch % 10 == 0:
         logging.debug('<<dialog policy DQfD train>> epoch {}, loss {}'.format(epoch, train_loss/2000))
     if epoch % 5 == 0:
         # save current model
@@ -236,9 +236,9 @@ def generate_necessary_file(root_dir):
     voc_file = os.path.join(root_dir, 'data/multiwoz/sys_da_voc.txt')
     voc_opp_file = os.path.join(root_dir, 'data/multiwoz/usr_da_voc.txt')
     vector = MultiWozVector(voc_file, voc_opp_file)
-    action_map_file = os.path.join(root_dir, 'convlab2/policy/position_dict.json')
-    position_dict, act_vec_dict = read_action_map(action_map_file)
-    return vector, position_dict, act_vec_dict
+    action_map_file = os.path.join(root_dir, 'convlab2/policy/act_list.txt')
+    act2ind_dict, ind2act_dict = read_action_map(action_map_file)
+    return vector, act2ind_dict, ind2act_dict
 
 
 if __name__ == '__main__':
@@ -250,7 +250,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-    vector, position_dict, _ = generate_necessary_file(root_dir)
+    vector, act2ind_dict, _ = generate_necessary_file(root_dir)
     # simple rule DST
     dst_sys = RuleDST()
     # load policy sys
@@ -265,7 +265,7 @@ if __name__ == '__main__':
     evaluator = MultiWozEvaluator()
     env = Environment(None, simulator, None, dst_sys, evaluator)
     # pre-train
-    prefill_buff = pretrain(env, expert_policy, policy_sys, vector, position_dict, args.batchsz, args.process_num)
+    prefill_buff = pretrain(env, expert_policy, policy_sys, vector, act2ind_dict, args.batchsz, args.process_num)
     for i in range(args.epoch):
         # train
-        train_update(prefill_buff, env, policy_sys, vector, position_dict, args.batchsz, i, args.process_num)
+        train_update(prefill_buff, env, policy_sys, vector, act2ind_dict, args.batchsz, i, args.process_num)
