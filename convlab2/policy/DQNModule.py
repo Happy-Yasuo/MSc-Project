@@ -24,20 +24,20 @@ class DuelDQN(nn.Module):
         q = v + adv-adv.mean()
         return q
 
-    def ind2act(self, ind, act_vec_dict):
+    def ind2act(self, ind, ind2act_dict):
         """
-        :param act_vec_dict:
+        :param ind2act_dict:
         :param ind:  int
         :return: [da_dim]
         """
-        action = random.choice(act_vec_dict[str(ind)])
+        action = ind2act_dict[ind]
         return action
 
-    def select_action(self, s, epsilon, act_vec_dict):
+    def select_action(self, s, epsilon, ind2act_dict):
         """
         :param s: [s_dim]
         :param epsilon:
-        :param act_vec_dict:
+        :param ind2act_dict:
         :return: [da_dim], [1]
         """
         q_s_a = self.forward(s)
@@ -45,7 +45,7 @@ class DuelDQN(nn.Module):
             a_ind = q_s_a.argmax().item()
         else:
             a_ind = np.random.choice(np.delete(np.arange(q_s_a.size(0)), q_s_a.argmax().item()))
-        action = self.ind2act(a_ind, act_vec_dict)
+        action = self.ind2act(a_ind, ind2act_dict)
         return action, a_ind
 
     def select_action_ind(self, s, epsilon):
@@ -64,37 +64,32 @@ class DuelDQN(nn.Module):
 
 def read_action_map(file_path, da_dim=209):
     with open(file_path, 'r') as f:
-        position_dict = json.load(f)
-    act_vec_dict = copy.deepcopy(position_dict)
-    for i in act_vec_dict:
-        for ind, j in enumerate(act_vec_dict[i]):
-            cur_act_vec = np.zeros(da_dim)
-            cur_act_vec[j] = 1
-            act_vec_dict[i][ind] = cur_act_vec
-    return position_dict, act_vec_dict
+        act_lst = f.readlines()
+        for i in range(len(act_lst)):
+            act_lst[i] = act_lst[i].strip('\n').split('-')
+    for i in range(len(act_lst)):
+        if act_lst[i] != ['']:
+            act_lst[i] = tuple(map(int, act_lst[i]))
+        else:
+            act_lst[i] = ()
+    act2ind_dict = dict(zip(act_lst, list(range(len(act_lst)))))
+    ind2act_dict = {}
+    for i in range(len(act_lst)):
+        act_vec = np.zeros(da_dim)
+        act_vec[list(act_lst[i])] = 1
+        ind2act_dict[i] = act_vec
+    return act2ind_dict, ind2act_dict
 
 
-def expert_act_vec2ind(cur_exp_act, position_dict):
+def expert_act_vec2ind(cur_exp_act, act2ind_dict):
     """transform an expert action into an index in DQN action space"""
-    """cur_exp_act is the indexes list of an expert action vector with 209 dimensions"""
-    num_act = len(cur_exp_act)
+    """cur_exp_act is the indexes tuple of an expert action vector with 209 dimensions"""
+    # initialize cur_act_ind
     # -1 means we fail to map the expert action into an index in our action space
     cur_act_ind = -1
-    if num_act == 1:
-        cur_act_ind = list(position_dict.keys())[list(position_dict.values()).index([cur_exp_act])]
-    elif num_act > 1:
-        for idx in position_dict:
-            cur_comb_len = len(position_dict[idx][0])
-            if cur_comb_len == num_act:
-                for act_vec in position_dict[idx]:
-                    if act_vec == cur_exp_act:
-                        cur_act_ind = idx
-                        break
-                if cur_act_ind != -1:
-                    break
-    else:
-        cur_act_ind = -1
-    return int(cur_act_ind)
+    if cur_exp_act in act2ind_dict.keys():
+        cur_act_ind = act2ind_dict[cur_exp_act]
+    return cur_act_ind
 
 
 # expert_label is used to record if a transition is from expert demonstration
