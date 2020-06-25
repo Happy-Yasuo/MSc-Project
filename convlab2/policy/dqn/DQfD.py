@@ -34,8 +34,8 @@ class DQfD(Policy):
         self.action_number = cfg['action_number']  # total number of actions considered
         init_logging_handler(os.path.join(os.path.dirname(os.path.abspath(__file__)), cfg['log_dir']))
         # load action mapping file
-        action_map_file = os.path.join(root_dir, 'convlab2/policy/position_dict.json')
-        _, self.act_vec_dict = read_action_map(action_map_file)
+        action_map_file = os.path.join(root_dir, 'convlab2/policy/act_list.txt')
+        _, self.ind2act_dict = read_action_map(action_map_file)
         # load vector for MultiWoz 2.1
         if dataset == 'Multiwoz':
             voc_file = os.path.join(root_dir, 'data/multiwoz/sys_da_voc.txt')
@@ -54,7 +54,7 @@ class DQfD(Policy):
     def predict(self, state):
         """Predict an system action and its index given state."""
         s_vec = torch.Tensor(self.vector.state_vectorize(state))
-        a, a_ind = self.Q.select_action(s_vec.to(device=DEVICE), self.epsilon, self.act_vec_dict)
+        a, a_ind = self.Q.select_action(s_vec.to(device=DEVICE), self.epsilon, self.ind2act_dict)
         action = self.vector.action_devectorize(a)
         state['system_action'] = action
         return action, a_ind
@@ -62,7 +62,7 @@ class DQfD(Policy):
     def predict_ind(self, state):
         """Predict an action index action space given state."""
         s_vec = torch.Tensor(self.vector.state_vectorize(state))
-        a_ind = self.Q.select_action_ind(s_vec.to(device=DEVICE), self.epsilon, self.act_vec_dict).cpu()
+        a_ind = self.Q.select_action_ind(s_vec.to(device=DEVICE), self.epsilon, self.ind2act_dict)
         return a_ind
 
     def init_session(self):
