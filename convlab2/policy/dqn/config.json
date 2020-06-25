@@ -5,7 +5,7 @@
 	"epsilon_degrade_period": 500,
 	"tau": 0.8,
 	"lr": 0.01,
-	"action_number": 319,
+	"action_number": 300,
 	"log_dir": "log",
 	"h_dim": 100,
 	"weight_decay": 0.00001
