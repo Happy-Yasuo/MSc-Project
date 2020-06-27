@@ -25,7 +25,9 @@ As for DQfD, now a rule-based expert is used to generate demonstrations. The hyp
 | L2 regularization weight  | 0.00001 |
 | Max replay size | 100,000 |
 
-Every 1,000 frames (steps), 2000 batches of size 32 would be sampled to train the model. I found it would be hard to optimize the loss if target network update period is 10,000 steps. Thus, now the update period is 5,000 steps. Since only 300 most common actions in MultiWoz 2.1 dataset is taken into consideration at each state, it is possible that some useful actions are missing in some cases. An action space of size 400 will further be tested to see if it can effectively improve the algorithm.  
+Every 1,000 frames (steps), 2000 batches of size 32 would be sampled to train the model. I found it would be hard to optimize the loss if target network update period is 10,000 steps. Thus, now the update period is 5,000 steps. Since only 300 most common actions in MultiWoz 2.1 dataset is taken into consideration at each state, it is possible that some important actions are missing in some cases. For example, {booking slot: time, domain: hotel} and {booking slot: time, domain: attraction} are always hard to learn.
+
+An action space of size 400 will further be tested to see if it can effectively improve the algorithm.  
 
 
 ## Experiment Result
