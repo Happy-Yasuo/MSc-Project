@@ -10,6 +10,7 @@ from convlab2.policy.DQNModule import DuelDQN, read_action_map
 from convlab2.util.train_util import init_logging_handler
 from convlab2.policy.vector.vector_multiwoz import MultiWozVector
 from convlab2.util.file_util import cached_path
+from convlab2.optimizer.radam import RAdam
 import zipfile
 import sys
 
@@ -47,7 +48,7 @@ class DQfD(Policy):
         # target Q network
         self.target_Q = DuelDQN(self.vector.state_dim, cfg['h_dim'], self.action_number).to(device=DEVICE)
         # define optimizer
-        self.optimizer = optim.Adam(self.Q.parameters(), lr=cfg['lr'], weight_decay=cfg['weight_decay'])
+        self.optimizer = RAdam(self.Q.parameters(), lr=cfg['lr'], weight_decay=cfg['weight_decay'])
         # loss function
         self.criterion = torch.nn.MSELoss()
 
