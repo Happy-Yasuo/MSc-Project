@@ -47,11 +47,11 @@ def sampler(pid, queue, evt, env, policy, vector, act2ind_dict, batchsz, expert)
 
     sampled_num = 0
     traj_len = 50  # max trajectory length
-    real_traj_len = 0  # real trajectory length of current sample dialog
 
     while sampled_num < batchsz:
         # for each trajectory, we reset the env and get initial state
         s = env.reset()
+        real_traj_len = 0   # real trajectory length of current sample dialog
         for t in range(traj_len):
             # for expert policy
             if expert:
@@ -77,13 +77,14 @@ def sampler(pid, queue, evt, env, policy, vector, act2ind_dict, batchsz, expert)
                 # if expert action transformed to existing action space successfully, add this transition to expert demo
                 if a_ind != -1:
                     buff.add_demo(s_vec.numpy(), a_ind, r, next_s_vec.numpy(), mask, 1)
+                    real_traj_len += 1
             else:
                 # add this transition to real experience memory
                 next_s_vec = torch.Tensor(policy.vector.state_vectorize(next_s))
                 buff.push(s_vec.numpy(), a_ind, r, next_s_vec.numpy(), mask, 0)
+                real_traj_len += 1
             # update per step
             s = next_s
-            real_traj_len = t
             # if dialog terminated then break
             if done:
                 break
@@ -163,8 +164,8 @@ def pretrain(env, expert_policy, policy, vector, act2ind_dict, batchsz, process_
     prefill_buff = ExperienceReplay(100000)
     sampled_frames_num = 0  # sampled number of frames
     sampled_dialog_num = 0  # sampled number of dialogs
-    dialog_num = 2000  # total number of dialogs required to sample
-    while sampled_dialog_num < dialog_num:
+    pre_train_frames_num = 20000  # total number of dialogs required to sample
+    while sampled_frames_num < pre_train_frames_num:
         # achieve a buffer stored expert demonstrations
         new_buff = sample(env, expert_policy, batchsz, True, vector, act2ind_dict, process_num)
         cur_frames_num = len(list(new_buff.get_batch().mask))
@@ -199,6 +200,8 @@ def pretrain(env, expert_policy, policy, vector, act2ind_dict, batchsz, process_
 def train_update(prefill_buff, env, policy, vector, act2ind_dict, batchsz, epoch, process_num):
     # achieve a buffer stored real agent experience
     new_buff = sample(env, policy, batchsz, False, vector, act2ind_dict, process_num)
+    cur_frames_num = len(list(new_buff.get_batch().mask))
+    cur_dialog_num = list(new_buff.get_batch().mask).count(0)
     # put real agent experience to pre-fill buffer while keep total transition number under maximum (100,000)
     prefill_buff.append(new_buff, False)
     train_loss = 0
@@ -222,11 +225,12 @@ def train_update(prefill_buff, env, policy, vector, act2ind_dict, batchsz, epoch
         train_loss += cur_loss
         # update
         policy.update(cur_loss)
-    if epoch % 10 == 0:
+    if epoch % 5 == 0:
         # update target network
         policy.update_net()
-    if epoch % 10 == 0:
-        logging.debug('<<dialog policy DQfD train>> epoch {}, loss {}'.format(epoch, train_loss/2000))
+    if epoch % 5 == 0:
+        logging.debug('<<dialog policy DQfD train>> epoch {}, {} frames and {} dialogues sampled in this turn， '
+                      'loss {}'.format(epoch, cur_frames_num, cur_dialog_num, train_loss/2000))
     if epoch % 5 == 0:
         # save current model
         policy.save(os.path.join(root_dir, 'convlab2/policy/dqn/save'), epoch)
