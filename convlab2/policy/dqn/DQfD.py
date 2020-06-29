@@ -22,31 +22,34 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 class DQfD(Policy):
 
-    def __init__(self, dataset='Multiwoz'):
+    def __init__(self, train=True):
         # load configuration file
         with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'config.json'), 'r') as f:
             cfg = json.load(f)
         self.gamma = cfg['gamma']
         self.epsilon_init = cfg['epsilon_init']
         self.epsilon_final = cfg['epsilon_final']
-        self.epsilon = self.epsilon_init
+        if train:
+            self.epsilon = self.epsilon_init
+        else:
+            self.epsilon = self.epsilon_final
         self.epsilon_degrade_period = cfg['epsilon_degrade_period']
         self.tau = cfg['tau']
         self.action_number = cfg['action_number']  # total number of actions considered
         init_logging_handler(os.path.join(os.path.dirname(os.path.abspath(__file__)), cfg['log_dir']))
         # load action mapping file
-        action_map_file = os.path.join(root_dir, 'convlab2/policy/act_list.txt')
+        action_map_file = os.path.join(root_dir, 'convlab2/policy/act_500_list.txt')
         _, self.ind2act_dict = read_action_map(action_map_file)
         # load vector for MultiWoz 2.1
-        if dataset == 'Multiwoz':
-            voc_file = os.path.join(root_dir, 'data/multiwoz/sys_da_voc.txt')
-            voc_opp_file = os.path.join(root_dir, 'data/multiwoz/usr_da_voc.txt')
-            self.vector = MultiWozVector(voc_file, voc_opp_file)
+        voc_file = os.path.join(root_dir, 'data/multiwoz/sys_da_voc.txt')
+        voc_opp_file = os.path.join(root_dir, 'data/multiwoz/usr_da_voc.txt')
+        self.vector = MultiWozVector(voc_file, voc_opp_file)
         # build Q network
         # current Q network to be trained
         self.Q = DuelDQN(self.vector.state_dim, cfg['h_dim'], self.action_number).to(device=DEVICE)
         # target Q network
         self.target_Q = DuelDQN(self.vector.state_dim, cfg['h_dim'], self.action_number).to(device=DEVICE)
+        self.target_Q.load_state_dict(self.Q.state_dict())
         # define optimizer
         self.optimizer = RAdam(self.Q.parameters(), lr=cfg['lr'], weight_decay=cfg['weight_decay'])
         # loss function
@@ -58,13 +61,15 @@ class DQfD(Policy):
         a, a_ind = self.Q.select_action(s_vec.to(device=DEVICE), self.epsilon, self.ind2act_dict)
         action = self.vector.action_devectorize(a)
         state['system_action'] = action
-        return action, a_ind
+        return action
 
     def predict_ind(self, state):
-        """Predict an action index action space given state."""
+        """Predict an system action and its index given state."""
         s_vec = torch.Tensor(self.vector.state_vectorize(state))
-        a_ind = self.Q.select_action_ind(s_vec.to(device=DEVICE), self.epsilon, self.ind2act_dict)
-        return a_ind
+        a, a_ind = self.Q.select_action(s_vec.to(device=DEVICE), self.epsilon, self.ind2act_dict)
+        action = self.vector.action_devectorize(a)
+        state['system_action'] = action
+        return action, a_ind
 
     def init_session(self):
         """Restore after one session"""
