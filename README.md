@@ -7,6 +7,21 @@ This work is based on ConvLab-2 framework.
 This algorithm takes a rule-based expert's actions as demonstrations. The state vector has 340 dimensions and action vector has 209 dimensions (each position in such a vector represent a single action). In order to introduce composite actions, 300 most common actions (including single and composite actions) in MultiWoz 2.1 dataset are mapped to the 209-dimension action space. Consequently, the total action number at each state is 300 and we can map every action to the 209-dimension act space by the action mapping file.
 
 
+## Run the codes
+Put files into corresponding path in ConvLab-2.
+
+For training, run `train.py` in the `dqn` directory:
+
+```bash
+python train.py
+```
+
+For evaluating, run `evaluate.py` in the `policy` directory:
+
+```bash
+python evaluate.py --model_name DQfD --load_path save/argument
+```
+
 ## Experimental Setup
 As for DQfD, now a rule-based expert is used to generate demonstrations. The hyper-parameters mostly follows [Gordon-Hall et al.,
 2020](https://arxiv.org/pdf/2004.08114.pdf) and shown as below:
@@ -29,7 +44,6 @@ Every 1,000 frames (steps), 2000 batches of size 32 would be sampled to train th
 
 Network with more complex structure (two hidden layers) has been tested and it is not as good as network with 1 hidden layer(difficult to optimize loss.). 
 
-Now action space of more action numbers is under training.
 
 | Numbers of actions | Coverage in MultiWoz 2.1| Match rate for rule-based expert   |
 | -------------------|-------------------------|----------------------------------- |
