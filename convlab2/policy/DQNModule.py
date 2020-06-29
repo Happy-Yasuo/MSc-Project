@@ -6,6 +6,7 @@ from collections import namedtuple
 import random
 import json
 import copy
+import logging
 
 
 class DuelDQN(nn.Module):
@@ -40,26 +41,13 @@ class DuelDQN(nn.Module):
         :param ind2act_dict:
         :return: [da_dim], [1]
         """
-        q_s_a = self.forward(s)
+        q_s_a = self.forward(s).cpu().detach()
         if np.random.random_sample() > epsilon:
             a_ind = q_s_a.argmax().item()
         else:
-            a_ind = np.random.choice(np.delete(np.arange(q_s_a.size(0)), q_s_a.argmax().item()))
+            a_ind = np.random.choice(np.delete(np.arange(q_s_a.size(-1)), q_s_a.argmax().item()))
         action = self.ind2act(a_ind, ind2act_dict)
         return action, a_ind
-
-    def select_action_ind(self, s, epsilon):
-        """
-        :param s: [s_dim]
-        :param epsilon:
-        :return: [1]
-        """
-        q_s_a = self.forward(s)
-        if np.random.random_sample() > epsilon:
-            a_ind = q_s_a.argmax().item()
-        else:
-            a_ind = np.random.choice(np.delete(np.arange(q_s_a.size(0)), q_s_a.argmax().item()))
-        return a_ind
 
 
 def read_action_map(file_path, da_dim=209):
@@ -110,7 +98,7 @@ class ExperienceReplay(object):
 
     def push(self, *args):
         """use this method to add real experience"""
-        self.memory.append(Transition_new(*args))
+        self.memory.insert(0, Transition_new(*args))
 
     def append(self, new_memory, expert=False):
         """use this method to add new memory from interacting with environment and keep the total size under maximum"""
@@ -120,6 +108,8 @@ class ExperienceReplay(object):
             self.memory = new_memory.memory + self.memory
             if self.__len__() > (self.max_size - len(self.expert_demo)):
                 num_del = self.__len__() - (self.max_size - len(self.expert_demo))
+                logging.debug('<<Replay Buffer>> {} transitions newly appended and {} transitions deleted,'.format(
+                    len(new_memory.memory), num_del))
                 for _ in range(num_del):
                     self.memory.pop()
 
