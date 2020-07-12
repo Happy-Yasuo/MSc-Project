@@ -2,6 +2,7 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import numpy as np
+import random
 import torch
 from torch import multiprocessing as mp
 from convlab2.dialog_agent.agent import PipelineAgent
@@ -57,10 +58,19 @@ def sampler(pid, queue, evt, env, policy, vector, act2ind_dict, batchsz, expert)
             if expert:
                 s_vec = torch.Tensor(vector.state_vectorize(s))
                 # [s_dim] => [a_dim]
-                a = policy.predict(s)
-                a_vec = vector.action_vectorize(a)
-                # transform expert action to one of 319 actions in action space
-                a_ind = expert_act_vec2ind(tuple(np.where(a_vec == 1)[0]), act2ind_dict)
+                a_output = policy.predict(s)
+                a_vec = vector.action_vectorize(a_output)
+                all_act_pos = np.where(a_vec == 1)[0]
+                if len(all_act_pos) > 0:
+                    a_ind, retain_pos = expert_act_vec2ind(tuple(np.where(a_vec == 1)[0]), act2ind_dict)
+                    a = []
+                    for single_pos in retain_pos:
+                        a.append(a_output[single_pos])
+                    s['system_action'] = a
+                else:
+                    a = a_output
+                    a_ind = -1
+
             else:
                 # [s_dim] => [a_dim]
                 s_vec = torch.Tensor(policy.vector.state_vectorize(s))
@@ -155,17 +165,35 @@ def pretrain(env, expert_policy, policy, vector, act2ind_dict, batchsz, process_
     :param expert_policy:
     :param policy:
     :param vector:
-    :param position_dict:
+    :param act2ind_dict:
     :param batchsz:
     :param process_num:
     :return:
     """
     # initialize pre-fill replay buffer
-    prefill_buff = ExperienceReplay(100000)
+    prefill_buff = ExperienceReplay(25000)
     sampled_frames_num = 0  # sampled number of frames
     sampled_success_num = 0  # sampled number of dialogs
     pre_train_frames_num = 25000  # total number of dialogs required to sample
+    seed = 20200711
+    while len(prefill_buff.expert_demo) < pre_train_frames_num:
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        seed += 1
+        # achieve a buffer stored expert demonstrations
+        new_buff = sample(env, expert_policy, batchsz, True, vector, act2ind_dict, process_num)
+        cur_frames_num = len(list(new_buff.get_batch().mask))
+        cur_success_num = list(new_buff.get_batch().reward).count(40)
+        # put expert demonstrations to pre-fill buffer
+        prefill_buff.append(new_buff, True)
+        logging.debug('<<Replay Buffer>> At this turn, {} frames sampled with {} successful dialogues, now pre-fill '
+                      'buffer has {} transitions in total'.format(cur_frames_num, cur_success_num, len(prefill_buff.expert_demo)))
     while sampled_frames_num < pre_train_frames_num:
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        seed += 1
         # achieve a buffer stored expert demonstrations
         new_buff = sample(env, expert_policy, batchsz, True, vector, act2ind_dict, process_num)
         cur_frames_num = len(list(new_buff.get_batch().mask))
@@ -173,6 +201,7 @@ def pretrain(env, expert_policy, policy, vector, act2ind_dict, batchsz, process_
         # put expert demonstrations to pre-fill buffer
         prefill_buff.append(new_buff, True)
         pre_train_loss = 0
+
         # sample 2000 batches
         for _ in range(2000):
             # each batch size is 32
@@ -192,12 +221,48 @@ def pretrain(env, expert_policy, policy, vector, act2ind_dict, batchsz, process_
         policy.update_net()
         sampled_frames_num += cur_frames_num
         sampled_success_num += cur_success_num
-        logging.debug('<<dialog policy DQfD pre-train>> {} frames sampled with {} successful dialogues, loss {}'.format(
-            sampled_frames_num, sampled_success_num, pre_train_loss/2000))
+
+        logging.debug('<<dialog policy DQfD pre-train>> {} frames sampled with {} successful dialogues, learning rate '
+                      '{}, loss {}'.format(sampled_frames_num, sampled_success_num, policy.scheduler.get_last_lr()[0], pre_train_loss/2000))
+        # decay learning rate
+        policy.scheduler.step()
     return prefill_buff
 
 
+def real_experience_fill(prefill_buff, env, policy, vector, act2ind_dict, batchsz, process_num):
+    """
+    pre-fill buffer with real experience
+    :param prefill_buff:
+    :param env:
+    :param policy:
+    :param vector:
+    :param act2ind_dict:
+    :param batchsz:
+    :param process_num:
+    :return:
+    """
+    pre_fill_frames_num = 25000  # total number of dialogs required to sample
+    seed = 20200101
+    while len(prefill_buff.memory) < pre_fill_frames_num:
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        seed += 1
+        # achieve a buffer stored expert demonstrations
+        new_buff = sample(env, policy, batchsz, False, vector, act2ind_dict, process_num)
+        cur_frames_num = len(list(new_buff.get_batch().reward))
+        cur_success_num = list(new_buff.get_batch().reward).count(40)
+        # put real agent experience to pre-fill buffer while keep total transition number under maximum (100,000)
+        prefill_buff.append(new_buff, False)
+        logging.debug('<<Replay Buffer>> At this turn, {} frames sampled with {} successful dialogues, now pre-fill '
+                      'buffer has {} real experience transitions in total'.format(cur_frames_num, cur_success_num, len(prefill_buff.memory)))
+
+
 def train_update(prefill_buff, env, policy, vector, act2ind_dict, batchsz, epoch, process_num):
+    seed = epoch
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
     # achieve a buffer stored real agent experience
     new_buff = sample(env, policy, batchsz, False, vector, act2ind_dict, process_num)
     cur_frames_num = len(list(new_buff.get_batch().reward))
@@ -210,6 +275,7 @@ def train_update(prefill_buff, env, policy, vector, act2ind_dict, batchsz, epoch
         policy.epsilon = policy.epsilon_init - epoch * (policy.epsilon_init - policy.epsilon_final) / policy.epsilon_degrade_period
     else:
         policy.epsilon = policy.epsilon_final
+
     # sample 2000 batches
     for _ in range(2000):
         # each batch size is 32
@@ -230,7 +296,11 @@ def train_update(prefill_buff, env, policy, vector, act2ind_dict, batchsz, epoch
         policy.update_net()
     if epoch % 5 == 0:
         logging.debug('<<dialog policy DQfD train>> epoch {}, {} frames sampled with {} successful '
-                      'dialogues in this turn，loss: {}'.format(epoch, cur_frames_num, cur_success_num, train_loss/2000))
+                      'dialogues at this turn, lr {}, loss: {}'.format(epoch, cur_frames_num, cur_success_num,
+                                                                       policy.scheduler.get_last_lr()[0], train_loss/2000))
+    # decay learning rate
+    if policy.scheduler.get_last_lr()[0] > 0.00001:
+        policy.scheduler.step()
     if epoch % 5 == 0:
         # save current model
         policy.save(os.path.join(root_dir, 'convlab2/policy/dqn/save'), epoch)
@@ -249,12 +319,12 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--load_path", type=str, default="", help="path of model to load")
     parser.add_argument("--batchsz", type=int, default=1000, help="batch size of trajactory sampling")
-    parser.add_argument("--epoch", type=int, default=2500, help="number of epochs to train")
+    parser.add_argument("--epoch", type=int, default=5000, help="number of epochs to train")
     parser.add_argument("--process_num", type=int, default=1, help="number of processes of trajactory sampling")
     args = parser.parse_args()
 
     root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
-    vector, act2ind_dict, _ = generate_necessary_file(root_dir)
+    vector, act2ind_dict, ind2act_dict = generate_necessary_file(root_dir)
     # simple rule DST
     dst_sys = RuleDST()
     # load policy sys
@@ -270,6 +340,8 @@ if __name__ == '__main__':
     env = Environment(None, simulator, None, dst_sys, evaluator)
     # pre-train
     prefill_buff = pretrain(env, expert_policy, policy_sys, vector, act2ind_dict, args.batchsz, args.process_num)
+    prefill_buff.max_size = 100000
+    # real_experience_fill(prefill_buff, env, policy_sys, vector, act2ind_dict, args.batchsz, args.process_num)
     for i in range(args.epoch):
         # train
         train_update(prefill_buff, env, policy_sys, vector, act2ind_dict, args.batchsz, i, args.process_num)
