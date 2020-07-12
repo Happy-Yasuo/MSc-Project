@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import torch
 from torch import optim
+from torch.optim.lr_scheduler import StepLR
 import numpy as np
 import logging
 import os
@@ -52,6 +53,7 @@ class DQfD(Policy):
         self.target_Q.load_state_dict(self.Q.state_dict())
         # define optimizer
         self.optimizer = RAdam(self.Q.parameters(), lr=cfg['lr'], weight_decay=cfg['weight_decay'])
+        self.scheduler = StepLR(self.optimizer, step_size=1, gamma=cfg['lr_decay'])
         # loss function
         self.criterion = torch.nn.MSELoss()
 
@@ -87,7 +89,7 @@ class DQfD(Policy):
             # only when agent take the same action as the expert does, the act_diff term(i.e. l(a_e,a)) is 0
             act_diff = q_all.new_full(q_all.size(), self.tau)
             act_diff[list(range(q_all.size(0))), a_exp] = 0
-            # aux_loss = max(Q(s, a) + l(a_e, a)) - Q(s, a_e)
+            # compute aux_loss = max(Q(s, a) + l(a_e, a)) - Q(s, a_e)
             q_max_act = (q_all + act_diff).max(dim=1)[0]
             q_exp_act = q_all.gather(-1, a_exp.unsqueeze(1)).squeeze(-1)
             aux_loss = (q_max_act - q_exp_act).sum() / s_exp.size(0)
