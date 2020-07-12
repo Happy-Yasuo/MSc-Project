@@ -3,8 +3,12 @@ This work is based on ConvLab-2 framework.
 
 ## Algorithms
 [DQfD](https://github.com/Happy-Yasuo/MSc-Project/tree/master/convlab2/policy/dqn)
+This algorithm takes a rule-based expert's actions as demonstrations. 
 
-This algorithm takes a rule-based expert's actions as demonstrations. The state vector has 340 dimensions and action vector has 209 dimensions (each position in such a vector represent a single action). In order to introduce composite actions, 300 most common actions (including single and composite actions) in MultiWoz 2.1 dataset are mapped to the 209-dimension action space. Consequently, the total action number at each state is 300 and we can map every action to the 209-dimension act space by the action mapping file.
+## Action space
+The state vector has 340 dimensions and action vector has 209 dimensions (each position in such a vector represent a single action). In order to introduce composite actions, 291 most common actions (including single and composite actions) in MultiWoz 2.1 dataset are mapped to the 209-dimension action space. Consequently, the total action number at each state is 500 (209 single actions and 291 composite actions) and we can map every action to the 209-dimension act space by the action mapping file.
+
+Obviously, this 500 actions cannot cover all the actions might be taken by expert policy. Thus, if the expert policy takes an outside action, we will decompose it into multiple actions to ensure one of them can be found in our action space. The experiment has shown it does work. 
 
 
 ## Run the codes
@@ -40,17 +44,7 @@ As for DQfD, now a rule-based expert is used to generate demonstrations. The hyp
 | L2 regularization weight  | 0.00001 |
 | Max replay size | 100,000 |
 
-Every 1,000 frames (steps), 2000 batches of size 32 would be sampled to train the model. I found it would be hard to optimize the loss if target network update period is 10,000 steps. Thus, now the update period is 5,000 steps. Since only 300 most common actions in MultiWoz 2.1 dataset is taken into consideration at each state, it is possible that some important actions are missing to complete the dialogue in some cases. For example, {booking slot: time, domain: hotel} and {booking slot: time, domain: attraction} are always hard to learn.
-
-Network with more complex structure (two hidden layers) has been tested and it is not as good as network with 1 hidden layer(difficult to optimize loss.). 
-
-
-| Numbers of actions | Coverage in MultiWoz 2.1| Match rate for rule-based expert   |
-| -------------------|-------------------------|----------------------------------- |
-| 300                | 63.74%                  | 66.23%                             |
-| 400                | 67.84%                  | 73.19%                             |
-| 500                | 70.87%                  | 79.28%                             |
-| 600                | 73.26%                  | 79.84%                             |
+Every 1,000 frames (steps), 2000 batches of size 32 would be sampled to train the model. I found it would be hard to optimize the loss if target network update period is 10,000 steps. Thus, now the update period is 5,000 steps. 
 
 
 
@@ -59,8 +53,11 @@ MLE is a supervised learning method which uses a simple feed forward network to 
 
 For MultiWoz 2.1 dataset, the optimum of MLE is 0.56 and PPO is 0.74. However, it seems there are some bugs in ConvLab-2 and the experiment result is shown as below. After fixing bugs and getting the optimum, the training trend of algorithms will be uploaded.
 
+Now the 500 action space seems to be suitable for DQfD and after pretraining by 25,000 frames from expert demonstrations, it can get a task success rate of 0.84 with average reward of over 14. However, when the agent starts to interact with environment, both of the success rate and average reward decrease significantly and then increase slowly. Finally a success rate of 0.66 can be reached, which is still far from expectation. The experiments shows that the training result heavily depends on hyper-parameters (e.g. decay rate of learning rate scheduler and minimum learning rate), so I think this issue can be solved by parameter-tuning.   
+
 |           | Task Success Rate |
 | --------- | ----------------- |
 | MLE       | 0.5157            |
 | PPO       | 0.6136            |
-| DQfD      | in training       |
+| DQfD (epoch 0)      | 0.8400            |
+| DQfD (epoch 2500)      | 0.6600           |
