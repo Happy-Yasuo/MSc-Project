@@ -13,13 +13,22 @@ class DuelDQN(nn.Module):
     def __init__(self, s_dim, h_dim, a_num):
         super(DuelDQN, self).__init__()
 
-        self.net = nn.Sequential(nn.Linear(s_dim, h_dim),
-                                 nn.ReLU(),)
+        self.net = nn.Linear(s_dim, h_dim)
+        self.activation = nn.ReLU()
         self.v_stream = nn.Linear(h_dim, 1)
         self.adv_stream = nn.Linear(h_dim, a_num)
+        self.init_weights()
+
+    def init_weights(self):
+        self.net.weight.data.normal_(0.0, 0.01)
+        self.net.bias.data.fill_(0.0)
+        self.v_stream.weight.data.normal_(0.0, 0.01)
+        self.v_stream.bias.data.fill_(0.0)
+        self.adv_stream.weight.data.normal_(0.0, 0.01)
+        self.adv_stream.bias.data.fill_(0.0)
 
     def forward(self, s):
-        h = self.net(s)
+        h = self.activation(self.net(s))
         v = self.v_stream(h)
         adv = self.adv_stream(h)
         q = v + adv-adv.mean()
@@ -72,12 +81,46 @@ def read_action_map(file_path, da_dim=209):
 def expert_act_vec2ind(cur_exp_act, act2ind_dict):
     """transform an expert action into an index in DQN action space"""
     """cur_exp_act is the indexes tuple of an expert action vector with 209 dimensions"""
-    # initialize cur_act_ind
+    num_act = len(cur_exp_act)
     # -1 means we fail to map the expert action into an index in our action space
     cur_act_ind = -1
-    if cur_exp_act in act2ind_dict.keys():
-        cur_act_ind = act2ind_dict[cur_exp_act]
-    return cur_act_ind
+    num_same_action = {}
+    retain_pos = []
+    if num_act == 1:
+        cur_act_ind = list(act2ind_dict.values())[list(act2ind_dict.keys()).index(cur_exp_act)]
+        retain_pos = [0]
+    elif num_act > 1:
+        cur_exp_set = set(cur_exp_act)
+        for idx in act2ind_dict:
+            cur_comb_len = len(idx)
+            if cur_comb_len > num_act:
+                continue
+            elif cur_comb_len == num_act:
+                if idx == cur_exp_act:
+                    cur_act_ind = act2ind_dict[idx]
+                    retain_pos = list(range(num_act))
+                    break
+            else:
+                similarity = 0
+                act_vec_set = set(idx)
+                if act_vec_set <= cur_exp_set:
+                    similarity = len(act_vec_set & cur_exp_set)
+                else:
+                    continue
+                num_same_action[idx] = similarity
+    else:
+        cur_act_ind = -1
+
+    if num_act > 0:
+        if cur_act_ind == -1:
+            best_match_act = max(num_same_action, key=num_same_action.get)
+            cur_act_ind = act2ind_dict[best_match_act]
+            for single_act in best_match_act:
+                for pos in range(len(cur_exp_act)):
+                    if cur_exp_act[pos] == single_act:
+                        retain_pos.append(pos)
+
+    return int(cur_act_ind), retain_pos
 
 
 # expert_label is used to record if a transition is from expert demonstration
@@ -94,7 +137,7 @@ class ExperienceReplay(object):
 
     def add_demo(self, *args):
         """use this method to add expert demonstrations """
-        self.expert_demo.append(Transition_new(*args))
+        self.expert_demo.insert(0, Transition_new(*args))
 
     def push(self, *args):
         """use this method to add real experience"""
@@ -104,6 +147,12 @@ class ExperienceReplay(object):
         """use this method to add new memory from interacting with environment and keep the total size under maximum"""
         if expert:
             self.expert_demo = new_memory.expert_demo + self.expert_demo
+            if len(self.expert_demo) > self.max_size:
+                num_del = len(self.expert_demo) - self.max_size
+                logging.debug('<<Replay Buffer>> {} expert transitions newly appended and {} expert '
+                              'transitions deleted,'.format(len(new_memory.expert_demo), num_del))
+                for _ in range(num_del):
+                    self.expert_demo.pop()
         else:
             self.memory = new_memory.memory + self.memory
             if self.__len__() > (self.max_size - len(self.expert_demo)):
