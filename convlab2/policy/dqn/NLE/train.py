@@ -192,11 +192,11 @@ def pretrain(env, expert_policy, policy, batchsz, process_num):
         for _ in range(3000):
             # each batch size is 32
             batch = prefill_buff.get_batch(32)
-            s = torch.from_numpy(np.stack(batch.state)).to(device=DEVICE)
-            a = torch.from_numpy(np.stack(batch.action)).to(device=DEVICE)
-            r = torch.from_numpy(np.stack(batch.reward)).to(device=DEVICE)
-            s_next = torch.from_numpy(np.stack(batch.next_state)).to(device=DEVICE)
-            mask = torch.Tensor(np.stack(batch.mask)).to(device=DEVICE)
+            s = torch.from_numpy(np.stack(batch.state)).type(torch.float).to(device=DEVICE)
+            a = torch.from_numpy(np.stack(batch.action)).type(torch.long).to(device=DEVICE)
+            r = torch.from_numpy(np.stack(batch.reward)).type(torch.float).to(device=DEVICE)
+            s_next = torch.from_numpy(np.stack(batch.next_state)).type(torch.float).to(device=DEVICE)
+            mask = torch.Tensor(np.stack(batch.mask)).type(torch.float).to(device=DEVICE)
             expert_label = np.stack(batch.expert_label)
             candidate_a_ind = np.array(batch.candidate_act_ind)
             # compute loss for current batch
@@ -238,11 +238,11 @@ def train_update(prefill_buff, env, policy, batchsz, epoch, process_num):
     for _ in range(3000):
         # each batch size is 32
         batch = prefill_buff.get_batch(32)
-        s = torch.from_numpy(np.stack(batch.state)).to(device=DEVICE)
-        a = torch.from_numpy(np.stack(batch.action)).to(device=DEVICE)
-        r = torch.from_numpy(np.stack(batch.reward)).to(device=DEVICE)
-        s_next = torch.from_numpy(np.stack(batch.next_state)).to(device=DEVICE)
-        mask = torch.Tensor(np.stack(batch.mask)).to(device=DEVICE)
+        s = torch.from_numpy(np.stack(batch.state)).type(torch.float).to(device=DEVICE)
+        a = torch.from_numpy(np.stack(batch.action)).type(torch.long).to(device=DEVICE)
+        r = torch.from_numpy(np.stack(batch.reward)).type(torch.float).to(device=DEVICE)
+        s_next = torch.from_numpy(np.stack(batch.next_state)).type(torch.float).to(device=DEVICE)
+        mask = torch.Tensor(np.stack(batch.mask)).type(torch.float).to(device=DEVICE)
         expert_label = np.stack(batch.expert_label)
         candidate_a_ind = np.array(batch.candidate_act_ind)
         # compute loss for current batch
