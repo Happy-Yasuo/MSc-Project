@@ -26,6 +26,15 @@ For No-label expert, if NLE hasn't been trained before, run `train_NLE.py` in th
 cd ./convlab2/policy/dqn/NLE
 python train_NLE.py
 ```
+Here is the evaluation result for the trained RoBERTa sequence classifier:
+|  |    |
+| -------------------|----------     |
+|    eval_loss       |   0.2517561675531083      |
+| eval_accuracy             |  0.9056347589952478    |
+| eval_f1 | 0.9093754074846786       |
+| eval_precision | 0.8747021196538317       |
+| eval_recall | 0.9469110658520027       |
+
 Then we can train the DQfD_NLE by running `train.py` in the same directory.
 ```bash
 python train.py
