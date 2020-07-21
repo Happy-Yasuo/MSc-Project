@@ -170,8 +170,15 @@ def evaluate(dataset_name, model_name, load_path, calculate_reward=True):
                 policy_sys.load(load_path)
             else:
                 policy_sys = PG.from_pretrained()
-        elif model_name == "DQfD":
-            from convlab2.policy.dqn.DQfD import DQfD
+        elif model_name == "DQfD_RE":
+            from convlab2.policy.dqn.RE.DQfD import DQfD
+            if load_path:
+                policy_sys = DQfD(False)
+                policy_sys.load(load_path)
+            else:
+                print('Please add load path.')
+        elif model_name == "DQfD_NLE":
+            from convlab2.policy.dqn.NLE.DQfD import DQfD
             if load_path:
                 policy_sys = DQfD(False)
                 policy_sys.load(load_path)
