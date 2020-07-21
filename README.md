@@ -81,5 +81,5 @@ Now the 500 action space seems to be suitable for DQfD and after pretraining by 
 | --------- | ----------------- |
 | MLE       | 0.5157            |
 | PPO       | 0.6136            |
-| DQfD (epoch 0)      | 0.8400            |
-| DQfD (epoch 2500)      | 0.6600           |
+| DQfD (epoch 0)      | 0.7600            |
+| DQfD (epoch 1000)      | 0.8400           |
