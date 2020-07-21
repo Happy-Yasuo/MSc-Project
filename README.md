@@ -14,8 +14,19 @@ Obviously, this 500 actions cannot cover all the actions might be taken by exper
 ## Run the codes
 Put files into corresponding path in ConvLab-2.
 
-For training, run `train.py` in the `dqn` directory:
+For Rule-based expert, run `train.py` in the `RE` directory:
 
+```bash
+cd ./convlab2/policy/dqn/RE
+python train.py
+```
+
+For No-label expert, if NLE hasn't been trained before, run `train_NLE.py` in the `NLE` directory:
+```bash
+cd ./convlab2/policy/dqn/NLE
+python train_NLE.py
+```
+Then we can train the DQfD_NLE by running `train.py` in the same directory.
 ```bash
 python train.py
 ```
@@ -23,7 +34,9 @@ python train.py
 For evaluating, run `evaluate.py` in the `policy` directory:
 
 ```bash
-python evaluate.py --model_name DQfD --load_path save/argument
+cd ./convlab2/policy
+python evaluate.py --model_name DQfD_RE --load_path save/argument
+python evaluate.py --model_name DQfD_NLE --load_path save/argument
 ```
 
 ## Experimental Setup
