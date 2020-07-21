@@ -43,18 +43,23 @@ class DuelDQN(nn.Module):
         action = ind2act_dict[ind]
         return action
 
-    def select_action(self, s, epsilon, ind2act_dict):
+    def select_action(self, s, epsilon, ind2act_dict, istrain):
         """
+
         :param s: [s_dim]
         :param epsilon:
         :param ind2act_dict:
         :return: [da_dim], [1]
+        :param istrain: Bool
         """
         q_s_a = self.forward(s).cpu().detach()
-        if np.random.random_sample() > epsilon:
-            a_ind = q_s_a.argmax().item()
+        if istrain:
+            if np.random.random_sample() > epsilon:
+                a_ind = q_s_a.argmax().item()
+            else:
+                a_ind = np.random.choice(np.delete(np.arange(q_s_a.size(-1)), q_s_a.argmax().item()))
         else:
-            a_ind = np.random.choice(np.delete(np.arange(q_s_a.size(-1)), q_s_a.argmax().item()))
+            a_ind = q_s_a.argmax().item()
         action = self.ind2act(a_ind, ind2act_dict)
         return action, a_ind
 
@@ -169,6 +174,57 @@ class ExperienceReplay(object):
         else:
             random_batch = random.sample(all_data, batch_size)
             return Transition_new(*zip(*random_batch))
+
+    def __len__(self):
+        # current length of experience
+        return len(self.memory)
+
+
+Transition_NLE = namedtuple('Transition_NLE', ('state', 'action', 'reward', 'next_state', 'mask', 'expert_label', 'candidate_act_ind'))
+
+
+class ExperienceReplayNLE(object):
+    def __init__(self, max_size):
+        # expert demonstration
+        self.expert_demo = []
+        # experience
+        self.memory = []
+        self.max_size = max_size
+
+    def add_demo(self, *args):
+        """use this method to add expert demonstrations """
+        self.expert_demo.insert(0, Transition_NLE(*args))
+
+    def push(self, *args):
+        """use this method to add real experience"""
+        self.memory.insert(0, Transition_NLE(*args))
+
+    def append(self, new_memory, expert=False):
+        """use this method to add new memory from interacting with environment and keep the total size under maximum"""
+        if expert:
+            self.expert_demo = new_memory.expert_demo + self.expert_demo
+            if len(self.expert_demo) > self.max_size:
+                num_del = len(self.expert_demo) - self.max_size
+                logging.debug('<<Replay Buffer>> {} expert transitions newly appended and {} expert '
+                              'transitions deleted,'.format(len(new_memory.expert_demo), num_del))
+                for _ in range(num_del):
+                    self.expert_demo.pop()
+        else:
+            self.memory = new_memory.memory + self.memory
+            if self.__len__() > (self.max_size - len(self.expert_demo)):
+                num_del = self.__len__() - (self.max_size - len(self.expert_demo))
+                logging.debug('<<Replay Buffer>> {} transitions newly appended and {} transitions deleted,'.format(
+                    len(new_memory.memory), num_del))
+                for _ in range(num_del):
+                    self.memory.pop()
+
+    def get_batch(self, batch_size=None):
+        all_data = self.expert_demo + self.memory
+        if batch_size is None:
+            return Transition_NLE(*zip(*all_data))
+        else:
+            random_batch = random.sample(all_data, batch_size)
+            return Transition_NLE(*zip(*random_batch))
 
     def __len__(self):
         # current length of experience
