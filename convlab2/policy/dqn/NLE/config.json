@@ -1,0 +1,15 @@
+{
+	"gamma": 0.9,
+	"epsilon_init": 0.1,
+	"epsilon_final": 0.01,
+	"epsilon_degrade_period": 500,
+	"tau": 0.8,
+	"lr": 0.01,
+	"lr_decay_step": 1,
+	"lr_decay": 0.95,
+	"min_lr": 0.00001,
+	"action_number": 500,
+	"log_dir": "log",
+	"h_dim": 100,
+	"weight_decay": 0.00001
+}
