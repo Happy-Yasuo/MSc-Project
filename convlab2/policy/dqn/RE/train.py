@@ -247,6 +247,10 @@ def train_update(prefill_buff, env, policy, vector, act2ind_dict, batchsz, epoch
     else:
         policy.epsilon = policy.epsilon_final
 
+    if (epoch+1) % 10 == 0:
+        # update target network
+        policy.update_net()
+
     # sample 2000 batches
     for _ in range(3000):
         # each batch size is 32
@@ -262,17 +266,15 @@ def train_update(prefill_buff, env, policy, vector, act2ind_dict, batchsz, epoch
         train_loss += cur_loss
         # update
         policy.update(cur_loss)
-    if epoch % 5 == 0:
-        # update target network
-        policy.update_net()
-    if epoch % 5 == 0:
+
+    if epoch % 10 == 0:
         logging.debug('<<dialog policy DQfD train>> epoch {}, {} frames sampled with {} successful '
                       'dialogues at this turn, lr {}, loss: {}'.format(epoch, cur_frames_num, cur_success_num,
                                                                        policy.scheduler.get_last_lr()[0], train_loss/3000))
     # decay learning rate
     if policy.scheduler.get_last_lr()[0] > policy.min_lr:
         policy.scheduler.step()
-    if epoch % 5 == 0:
+    if epoch % 10 == 0:
         # save current model
         policy.save(os.path.join(root_dir, 'convlab2/policy/dqn/RE/save'), epoch)
 
@@ -290,7 +292,7 @@ if __name__ == '__main__':
     parser = ArgumentParser()
     parser.add_argument("--load_path", type=str, default="", help="path of model to load")
     parser.add_argument("--batchsz", type=int, default=1000, help="batch size of trajactory sampling")
-    parser.add_argument("--epoch", type=int, default=5000, help="number of epochs to train")
+    parser.add_argument("--epoch", type=int, default=2550, help="number of epochs to train")
     parser.add_argument("--process_num", type=int, default=1, help="number of processes of trajactory sampling")
     args = parser.parse_args()
 
