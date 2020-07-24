@@ -1,3 +1,4 @@
+
 # -*- coding: utf-8 -*-
 import torch
 from torch import optim
@@ -63,16 +64,23 @@ class DQfD(Policy):
     def predict(self, state):
         """Predict an system action and its index given state."""
         s_vec = torch.Tensor(self.vector.state_vectorize(state))
-        a, a_ind = self.Q.select_action(s_vec.to(device=DEVICE), self.epsilon, self.ind2act_dict, self.istrain)
-        action = self.vector.action_devectorize(a)
+        if state['user_action'] == [['bye', 'general', 'none', 'none']]:
+            action = [['bye', 'general', 'none', 'none']]
+        else:
+            a, a_ind = self.Q.select_action(s_vec.to(device=DEVICE), self.epsilon, self.ind2act_dict, self.istrain)
+            action = self.vector.action_devectorize(a)
         state['system_action'] = action
         return action
 
     def predict_ind(self, state):
         """Predict an system action and its index given state."""
         s_vec = torch.Tensor(self.vector.state_vectorize(state))
-        a, a_ind = self.Q.select_action(s_vec.to(device=DEVICE), self.epsilon, self.ind2act_dict, self.istrain)
-        action = self.vector.action_devectorize(a)
+        if state['user_action'] == [['bye', 'general', 'none', 'none']]:
+            action = [['bye', 'general', 'none', 'none']]
+            a_ind = 489
+        else:
+            a, a_ind = self.Q.select_action(s_vec.to(device=DEVICE), self.epsilon, self.ind2act_dict, self.istrain)
+            action = self.vector.action_devectorize(a)
         state['system_action'] = action
         return action, a_ind
 
@@ -80,20 +88,26 @@ class DQfD(Policy):
         """Restore after one session"""
         pass
 
-    def aux_loss(self, s, candidate_a_ind, expert_label):
+    def aux_loss(self, s, a, candidate_a_ind, expert_label):
         """compute auxiliary loss given batch of states, actions and expert labels"""
-        aux_loss = 0
         # only keep those expert demonstrations by setting expert label to 1
         s_exp = s[np.where(expert_label == 1)[0]]
+        a_exp = a[np.where(expert_label == 1)[0]]
         candidate_a_ind_exp = candidate_a_ind[np.where(expert_label == 1)[0]]
         # if there exist expert demonstration in current batch
         if s_exp.size(0) > 0:
             # compute q value predictions for states for each action
             q_all = self.Q(s_exp)
-            q_max_act = q_all.max(dim=1)[0]
-            for k in range(s_exp.size(0)):
-                if q_max_act[k] not in candidate_a_ind_exp[k]:
-                    aux_loss += self.tau
+            # only when agent take the same action as the expert does, the act_diff term(i.e. l(a_e,a)) is 0
+            act_diff = q_all.new_full(q_all.size(), self.tau)
+            for row, exp_ind in enumerate(candidate_a_ind_exp):
+                act_diff[row, exp_ind] = 0
+            # compute aux_loss = max(Q(s, a) + l(a_e, a)) - Q(s, a_e)
+            q_max_act = (q_all + act_diff).max(dim=1)[0]
+            q_exp_act = q_all.gather(-1, a_exp.unsqueeze(1)).squeeze(-1)
+            aux_loss = (q_max_act - q_exp_act).sum() / s_exp.size(0)
+        else:
+            aux_loss = 0
         return aux_loss
 
     def update_net(self):
@@ -120,7 +134,7 @@ class DQfD(Policy):
         # q loss
         q_loss = self.criterion(act_q_preds, max_q_targets)
         # auxiliary loss
-        aux_loss_term = self.aux_loss(s, candidate_a_ind, expert_label)
+        aux_loss_term = self.aux_loss(s, a, candidate_a_ind, expert_label)
         # total loss
         loss = q_loss + aux_loss_term
         return loss
