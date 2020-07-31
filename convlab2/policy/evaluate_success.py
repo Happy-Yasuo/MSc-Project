@@ -122,7 +122,7 @@ root_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__fil
 def evaluate_trend(dataset_name, model_name):
     task_success_list = []
     evaluator_success_list = []
-    for epoch in range(0, 2010, 10):
+    for epoch in range(0, 2050, 10):
         load_path = "save/" + str(epoch)
         task_success_rate, evaluator_success_rate = evaluate(dataset_name, model_name, load_path)
         task_success_list.append(task_success_rate)
