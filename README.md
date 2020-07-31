@@ -88,6 +88,8 @@ As for DQfD, now a rule-based expert is used to generate demonstrations. The hyp
 | Q network | 100d hidden layer and ReLU activation |
 | Target network update period | 10,000 steps |
 | Learning rate | 0.01 |
+| Learning rate decay rate| 0.99 |
+| Minimum learning rate | 0.0000001|
 | L2 regularization weight  | 0.00001 |
 | Max replay size | 100,000 |
 
