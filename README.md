@@ -14,6 +14,13 @@ Obviously, this 500 actions cannot cover all the actions might be taken by exper
 ## Run the codes
 Put files into corresponding path in ConvLab-2.
 
+For DQN, run `train.py` in the `DQN` directory:
+
+```bash
+cd ./convlab2/policy/dqn/DQN
+python train.py
+```
+
 For Rule-based expert, run `train.py` in the `RE` directory:
 
 ```bash
@@ -40,13 +47,31 @@ Then we can train the DQfD_NLE by running `train.py` in the same directory.
 python train.py
 ```
 
-For evaluating, run `evaluate.py` in the `policy` directory:
+For evaluating the task success rate and other algorithm performance, run `evaluate.py` in the `policy` directory:
 
 ```bash
 cd ./convlab2/policy
+python evaluate.py --model_name DQN --load_path save/argument
 python evaluate.py --model_name DQfD_RE --load_path save/argument
 python evaluate.py --model_name DQfD_NLE --load_path save/argument
 ```
+
+For reproduce a figure as below, we need firstly complete the training of corresponding agents and then run
+```bash
+cd ./convlab2/policy
+python evaluate_success.py --model_name DQN
+python evaluate_success.py --model_name DQfD_RE
+python evaluate_success.py --model_name DQfD_NLE
+```
+
+Then, run
+```bash
+cd ./convlab2/policy
+python eval_plot.py
+```
+to generate the figure plot in '/eval_result/images' directory.
+
+![image](https://github.com/JQWang-77/MSc-Project/blob/master/convlab2/policy/eval_result/images/comparison.png)
 
 ## Experimental Setup
 As for DQfD, now a rule-based expert is used to generate demonstrations. The hyper-parameters mostly follows [Gordon-Hall et al.,
@@ -55,31 +80,26 @@ As for DQfD, now a rule-based expert is used to generate demonstrations. The hyp
 |                    | Value         |
 | -------------------|----------     |
 | Steps              | 2,500,000     |
-| Pre-training steps | 20,000        |
+| Pre-training steps | 15,000        |
 | Epsilon start      | 0.1           |
 | Epsilon end        | 0.01          | 
 | Epsilon decay rate | 500,000 steps |
 | Discount factor    | 0.9           |
 | Q network | 100d hidden layer and ReLU activation |
-| Target network update period | 5,000 steps |
+| Target network update period | 10,000 steps |
 | Learning rate | 0.01 |
 | L2 regularization weight  | 0.00001 |
 | Max replay size | 100,000 |
 
-Every 1,000 frames (steps), 2000 batches of size 32 would be sampled to train the model. I found it would be hard to optimize the loss if target network update period is 10,000 steps. Thus, now the update period is 5,000 steps. 
-
+Every 1,000 frames (steps), 3000 batches of size 32 would be sampled to train the model. 
 
 
 ## Experiment Result
-MLE is a supervised learning method which uses a simple feed forward network to fit the relationship between states and actions. It can be considered as a simple imitation learning and give PPO a warm start.
-
-For MultiWoz 2.1 dataset, the optimum of MLE is 0.56 and PPO is 0.74. However, it seems there are some bugs in ConvLab-2 and the experiment result is shown as below. After fixing bugs and getting the optimum, the training trend of algorithms will be uploaded.
-
-Now the 500 action space seems to be suitable for DQfD and after pretraining by 25,000 frames from expert demonstrations, it can get a task success rate of 0.84 with average reward of over 14. However, when the agent starts to interact with environment, both of the success rate and average reward decrease significantly and then increase slowly. Finally a success rate of 0.66 can be reached, which is still far from expectation. The experiments shows that the training result heavily depends on hyper-parameters (e.g. decay rate of learning rate scheduler and minimum learning rate), so I think this issue can be solved by parameter-tuning.   
 
 |           | Task Success Rate |
 | --------- | ----------------- |
 | MLE       | 0.5157            |
 | PPO       | 0.6136            |
-| DQfD (epoch 0)      | 0.7600            |
-| DQfD (epoch 1000)      | 0.8400           |
+| DQN      | 0.70         |
+| DQfD_RE      | 0.77           |
+| DQfD_NLE      | 0.74           |
