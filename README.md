@@ -103,3 +103,5 @@ Every 1,000 frames (steps), 3000 batches of size 32 would be sampled to train th
 | DQN      | 0.70         |
 | DQfD_RE      | 0.77           |
 | DQfD_NLE      | 0.74           |
+
+The result is highly sensitive to hyper-parameter configurations.
