@@ -312,8 +312,8 @@ if __name__ == '__main__':
     policy_usr = RulePolicy(character='usr')
     # assemble
     simulator = PipelineAgent(None, None, policy_usr, None, 'user')
-    evaluator = MultiWozEvaluator()
-    env = Environment(None, simulator, None, dst_sys, evaluator)
+    # evaluator = MultiWozEvaluator()
+    env = Environment(None, simulator, None, dst_sys)
     # pre-train
     prefill_buff = pretrain(env, expert_policy, policy_sys, vector, act2ind_dict, args.batchsz, args.process_num)
     prefill_buff.max_size = 100000
