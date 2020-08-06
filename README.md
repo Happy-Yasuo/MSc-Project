@@ -98,10 +98,11 @@ Every 1,000 frames (steps), 3000 batches of size 32 would be sampled to train th
 
 ## Experiment Result
 
-|           | Task Success Rate |
-| --------- | ----------------- |
-| MLE       | 0.5157            |
-| PPO       | 0.6136            |
+|           | Task Success Rate | Average Reward |
+| --------- | ----------------- | ----------------- |
+| MLE       | 0.5157            | |
+| PPO       | 0.6136            | |
+| Rule Expert | 0.93            |13.70 |
 | DQN      | 0.70         |
 | DQfD_RE      | 0.77           |
 | DQfD_NLE      | 0.74           |
