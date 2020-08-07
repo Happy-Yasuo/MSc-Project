@@ -149,10 +149,8 @@ def pretrain(env, expert_policy, policy, batchsz, process_num):
     :return:
     """
     # initialize pre-fill replay buffer
-    prefill_buff = ExperienceReplayNLE(15000)
-    sampled_frames_num = 0  # sampled number of frames
-    sampled_success_num = 0  # sampled number of dialogs
-    pre_train_frames_num = 15000  # total number of dialogs required to sample
+    prefill_buff = ExperienceReplayNLE(25000)
+    pre_train_frames_num = 25000  # total number of dialogs required to sample
     seed = 20200721
     while len(prefill_buff.expert_demo) < pre_train_frames_num:
         random.seed(seed)
@@ -167,20 +165,9 @@ def pretrain(env, expert_policy, policy, batchsz, process_num):
         prefill_buff.append(new_buff, True)
         logging.debug('<<Replay Buffer>> At this turn, {} frames sampled with {} successful dialogues, now pre-fill '
                       'buffer has {} transitions in total'.format(cur_frames_num, cur_success_num, len(prefill_buff.expert_demo)))
-    while sampled_frames_num < pre_train_frames_num:
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        seed += 1
-        # achieve a buffer stored expert demonstrations
-        new_buff = sample(env, expert_policy, batchsz, True, process_num)
-        cur_frames_num = len(list(new_buff.get_batch().mask))
-        cur_success_num = list(new_buff.get_batch().reward).count(80)
-        # put expert demonstrations to pre-fill buffer
-        prefill_buff.append(new_buff, True)
+    for epoch in range(25):
         pre_train_loss = 0
-
-        # sample 2000 batches
+        # sample 3000 batches
         for _ in range(3000):
             # each batch size is 32
             batch = prefill_buff.get_batch(32)
@@ -198,11 +185,8 @@ def pretrain(env, expert_policy, policy, batchsz, process_num):
             policy.update(cur_loss)
         # update target network
         policy.update_net()
-        sampled_frames_num += cur_frames_num
-        sampled_success_num += cur_success_num
-
-        logging.debug('<<dialog policy DQfD pre-train>> {} frames sampled with {} successful dialogues, learning rate '
-                      '{}, loss {}'.format(sampled_frames_num, sampled_success_num, policy.scheduler.get_last_lr()[0], pre_train_loss/3000))
+        logging.debug('<<dialog policy DQfD pre-train>> Epoch {}, learning rate'
+                      '{}, loss {}'.format(epoch, policy.scheduler.get_last_lr()[0], pre_train_loss/3000))
         # decay learning rate
         policy.scheduler.step()
     return prefill_buff
@@ -230,7 +214,7 @@ def train_update(prefill_buff, env, policy, batchsz, epoch, process_num):
         # update target network
         policy.update_net()
 
-    # sample 2000 batches
+    # sample 3000 batches
     for _ in range(3000):
         # each batch size is 32
         batch = prefill_buff.get_batch(32)
@@ -290,7 +274,7 @@ if __name__ == '__main__':
     policy_usr = RulePolicy(character='usr')
     # assemble
     simulator = PipelineAgent(None, None, policy_usr, None, 'user')
-    # evaluator = MultiWozEvaluator()
+
     env = Environment(None, simulator, None, dst_sys)
     # pre-train
     prefill_buff = pretrain(env, expert_policy, policy_sys, args.batchsz, args.process_num)
