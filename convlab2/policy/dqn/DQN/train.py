@@ -180,7 +180,7 @@ def train_update(prefill_buff, env, policy, vector, act2ind_dict, batchsz, epoch
         # update target network
         policy.update_net()
 
-    # sample 2000 batches
+    # sample batches
     num_iter = len(prefill_buff.memory) // 50
     for _ in range(num_iter):
         # each batch size is 32
