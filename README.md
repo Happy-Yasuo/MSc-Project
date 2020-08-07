@@ -103,8 +103,8 @@ Every 1,000 frames (steps), 3000 batches of size 32 would be sampled to train th
 | MLE       | 0.5157            | |
 | PPO       | 0.6136            | |
 | Rule Expert | 0.93            |13.70 |
-| DQN      | 0.70         |
+| DQN      | 0.70         | |
 | DQfD_RE      | 0.77           |
-| DQfD_NLE      | 0.74           |
+| DQfD_NLE      | 0.74           | 14.67|
 
 The result is highly sensitive to hyper-parameter configurations.
