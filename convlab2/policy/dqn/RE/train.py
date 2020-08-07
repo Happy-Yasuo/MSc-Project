@@ -192,10 +192,6 @@ def pretrain(env, expert_policy, policy, vector, act2ind_dict, batchsz, process_
         logging.debug('<<Replay Buffer>> At this turn, {} frames sampled with {} successful dialogues, now pre-fill '
                       'buffer has {} transitions in total'.format(cur_frames_num, cur_success_num, len(prefill_buff.expert_demo)))
     for epoch in range(25):
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        seed += 1
         pre_train_loss = 0
         # sample 3000 batches
         for _ in range(3000):
