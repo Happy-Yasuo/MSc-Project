@@ -173,10 +173,10 @@ def pretrain(env, expert_policy, policy, vector, act2ind_dict, batchsz, process_
     :return:
     """
     # initialize pre-fill replay buffer
-    prefill_buff = ExperienceReplay(15000)
+    prefill_buff = ExperienceReplay(25000)
     sampled_frames_num = 0  # sampled number of frames
     sampled_success_num = 0  # sampled number of dialogs
-    pre_train_frames_num = 15000  # total number of dialogs required to sample
+    pre_train_frames_num = 25000  # total number of dialogs required to sample
     seed = 20200721
     while len(prefill_buff.expert_demo) < pre_train_frames_num:
         random.seed(seed)
@@ -186,25 +186,18 @@ def pretrain(env, expert_policy, policy, vector, act2ind_dict, batchsz, process_
         # achieve a buffer stored expert demonstrations
         new_buff = sample(env, expert_policy, batchsz, True, vector, act2ind_dict, process_num)
         cur_frames_num = len(list(new_buff.get_batch().mask))
-        cur_success_num = list(new_buff.get_batch().reward).count(40)
+        cur_success_num = list(new_buff.get_batch().reward).count(80)
         # put expert demonstrations to pre-fill buffer
         prefill_buff.append(new_buff, True)
         logging.debug('<<Replay Buffer>> At this turn, {} frames sampled with {} successful dialogues, now pre-fill '
                       'buffer has {} transitions in total'.format(cur_frames_num, cur_success_num, len(prefill_buff.expert_demo)))
-    while sampled_frames_num < pre_train_frames_num:
+    for epoch in range(25):
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
         seed += 1
-        # achieve a buffer stored expert demonstrations
-        new_buff = sample(env, expert_policy, batchsz, True, vector, act2ind_dict, process_num)
-        cur_frames_num = len(list(new_buff.get_batch().mask))
-        cur_success_num = list(new_buff.get_batch().reward).count(40)
-        # put expert demonstrations to pre-fill buffer
-        prefill_buff.append(new_buff, True)
         pre_train_loss = 0
-
-        # sample 2000 batches
+        # sample 3000 batches
         for _ in range(3000):
             # each batch size is 32
             batch = prefill_buff.get_batch(32)
@@ -221,11 +214,8 @@ def pretrain(env, expert_policy, policy, vector, act2ind_dict, batchsz, process_
             policy.update(cur_loss)
         # update target network
         policy.update_net()
-        sampled_frames_num += cur_frames_num
-        sampled_success_num += cur_success_num
-
-        logging.debug('<<dialog policy DQfD pre-train>> {} frames sampled with {} successful dialogues, learning rate '
-                      '{}, loss {}'.format(sampled_frames_num, sampled_success_num, policy.scheduler.get_last_lr()[0], pre_train_loss/3000))
+        logging.debug('<<dialog policy DQfD pre-train>> Epoch {}, learning rate '
+                      '{}, loss {}'.format(epoch, policy.scheduler.get_last_lr()[0], pre_train_loss/3000))
         # decay learning rate
         policy.scheduler.step()
     return prefill_buff
@@ -239,7 +229,7 @@ def train_update(prefill_buff, env, policy, vector, act2ind_dict, batchsz, epoch
     # achieve a buffer stored real agent experience
     new_buff = sample(env, policy, batchsz, False, vector, act2ind_dict, process_num)
     cur_frames_num = len(list(new_buff.get_batch().reward))
-    cur_success_num = list(new_buff.get_batch().reward).count(40)
+    cur_success_num = list(new_buff.get_batch().reward).count(80)
     # put real agent experience to pre-fill buffer while keep total transition number under maximum (100,000)
     prefill_buff.append(new_buff, False)
     train_loss = 0
@@ -253,7 +243,7 @@ def train_update(prefill_buff, env, policy, vector, act2ind_dict, batchsz, epoch
         # update target network
         policy.update_net()
 
-    # sample 2000 batches
+    # sample 3000 batches
     for _ in range(3000):
         # each batch size is 32
         batch = prefill_buff.get_batch(32)
@@ -312,7 +302,7 @@ if __name__ == '__main__':
     policy_usr = RulePolicy(character='usr')
     # assemble
     simulator = PipelineAgent(None, None, policy_usr, None, 'user')
-    # evaluator = MultiWozEvaluator()
+
     env = Environment(None, simulator, None, dst_sys)
     # pre-train
     prefill_buff = pretrain(env, expert_policy, policy_sys, vector, act2ind_dict, args.batchsz, args.process_num)
