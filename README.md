@@ -33,7 +33,34 @@ For No-label expert, if NLE hasn't been trained before, run `train_NLE.py` in th
 cd ./convlab2/policy/dqn/NLE
 python train_NLE.py
 ```
-Here is the evaluation result for the trained RoBERTa sequence classifier:
+Here is the evaluation result for the trained RoBERTa sequence classifier using Multiwoz 2.1 dataset:
+|  |    |
+| -------------------|----------     |
+|    eval_loss       |   0.2517561675531083      |
+| eval_accuracy             |  0.9056347589952478    |
+| eval_f1 | 0.9093754074846786       |
+| eval_precision | 0.8747021196538317       |
+| eval_recall | 0.9469110658520027       |
+
+For Taskmaster dataset:
+|  |    |
+| -------------------|----------     |
+|    eval_loss       |   0.2517561675531083      |
+| eval_accuracy             |  0.9056347589952478    |
+| eval_f1 | 0.9093754074846786       |
+| eval_precision | 0.8747021196538317       |
+| eval_recall | 0.9469110658520027       |
+
+For Personachat dataset:
+|  |    |
+| -------------------|----------     |
+|    eval_loss       |   0.2517561675531083      |
+| eval_accuracy             |  0.9056347589952478    |
+| eval_f1 | 0.9093754074846786       |
+| eval_precision | 0.8747021196538317       |
+| eval_recall | 0.9469110658520027       |
+
+For Scriptbase-j dataset:
 |  |    |
 | -------------------|----------     |
 |    eval_loss       |   0.2517561675531083      |
@@ -104,7 +131,7 @@ Every 1,000 frames (steps), 3000 batches of size 32 would be sampled to train th
 | PPO       | 0.6136            | |
 | Rule Expert | 0.93            |13.70 |
 | DQN      | 0.70         | |
-| DQfD_RE      | 0.77           |
+| DQfD_RE      | 0.81           |
 | DQfD_NLE      | 0.74           | 14.67|
 
 The result is highly sensitive to hyper-parameter configurations.
