@@ -67,20 +67,22 @@ For Taskmaster dataset:
 For Personachat dataset:
 |  |    |
 | -------------------|----------     |
-|    eval_loss       |  0.2813      |
-| eval_accuracy             |  0.8788  |
-| eval_f1 | 0.8826     |
-| eval_precision | 0.8561      |
-| eval_recall | 0.9107  |
+|    eval_loss       |        |
+| eval_accuracy             |    |
+| eval_f1 |            |
+| eval_precision |       |
+| eval_recall |   |
 
 For Scriptbase-j dataset:
 |  |    |
 | -------------------|----------     |
-|    eval_loss       |  0.2813      |
-| eval_accuracy             |  0.8788  |
-| eval_f1 | 0.8826     |
-| eval_precision | 0.8561      |
-| eval_recall | 0.9107  |
+|    eval_loss       |        |
+| eval_accuracy             |    |
+| eval_f1 |            |
+| eval_precision |       |
+| eval_recall |   |
+
+
 Then we can train the DQfD_NLE by running `train.py` in the same directory.
 ```bash
 python train.py
