@@ -76,11 +76,12 @@ For Personachat dataset:
 For Scriptbase-j dataset:
 |  |    |
 | -------------------|----------     |
-|    eval_loss       |        |
-| eval_accuracy             |    |
-| eval_f1 |            |
-| eval_precision |       |
-| eval_recall |   |
+|    eval_loss       |   0.5008     |
+| eval_accuracy             |   0.7421 |
+| eval_f1 |        0.7286    |
+| eval_precision |    0.7690   |
+| eval_recall |  0.6923 |
+
 
 
 Then we can train the DQfD_NLE by running `train.py` in the same directory.
