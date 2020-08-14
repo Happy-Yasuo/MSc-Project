@@ -36,39 +36,51 @@ python train_NLE.py
 Here is the evaluation result for the trained RoBERTa sequence classifier using Multiwoz 2.1 dataset:
 |  |    |
 | -------------------|----------     |
-|    eval_loss       |   0.2517561675531083      |
-| eval_accuracy             |  0.9056347589952478    |
-| eval_f1 | 0.9093754074846786       |
-| eval_precision | 0.8747021196538317       |
-| eval_recall | 0.9469110658520027       |
+|    eval_loss       |   0.2517      |
+| eval_accuracy             |  0.9056    |
+| eval_f1 | 0.9093     |
+| eval_precision | 0.8747     |
+| eval_recall | 0.9469    |
+
+if only train the classifier's parameters,
+|  |    |
+| -------------------|----------     |
+|    eval_loss       |  0.6789      |
+| eval_accuracy             |  0.6137  |
+| eval_f1 | 0.6386    |
+| eval_precision | 0.5999      |
+| eval_recall | 0.6826  |
+
 
 For Taskmaster dataset:
 |  |    |
 | -------------------|----------     |
-|    eval_loss       |   0.2517561675531083      |
-| eval_accuracy             |  0.9056347589952478    |
-| eval_f1 | 0.9093754074846786       |
-| eval_precision | 0.8747021196538317       |
-| eval_recall | 0.9469110658520027       |
+|    eval_loss       |  0.2813      |
+| eval_accuracy             |  0.8788  |
+| eval_f1 | 0.8826     |
+| eval_precision | 0.8561      |
+| eval_recall | 0.9107  |
+
+
+
 
 For Personachat dataset:
 |  |    |
 | -------------------|----------     |
-|    eval_loss       |   0.2517561675531083      |
-| eval_accuracy             |  0.9056347589952478    |
-| eval_f1 | 0.9093754074846786       |
-| eval_precision | 0.8747021196538317       |
-| eval_recall | 0.9469110658520027       |
+|    eval_loss       |  0.2813      |
+| eval_accuracy             |  0.8788  |
+| eval_f1 | 0.8826     |
+| eval_precision | 0.8561      |
+| eval_recall | 0.9107  |
 
 For Scriptbase-j dataset:
 |  |    |
 | -------------------|----------     |
-|    eval_loss       |   0.2517561675531083      |
-| eval_accuracy             |  0.9056347589952478    |
-| eval_f1 | 0.9093754074846786       |
-| eval_precision | 0.8747021196538317       |
-| eval_recall | 0.9469110658520027       |
-
+|    eval_loss       |  0.2813      |
+| eval_accuracy             |  0.8788  |
+| eval_f1 | 0.8826     |
+| eval_precision | 0.8561      |
+| eval_recall | 0.9107  |
 Then we can train the DQfD_NLE by running `train.py` in the same directory.
 ```bash
 python train.py
