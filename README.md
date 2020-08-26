@@ -145,6 +145,7 @@ Every 1,000 frames (steps), 3000 batches of size 32 would be sampled to train th
 | MLE       | 0.5157            | |
 | PPO       | 0.6136            | |
 | Rule Expert | 0.93            |13.70 |
+| NLE Expert Multiwoz | 0.45            ||
 | NLE Expert Taskmaster | 0.38            ||
 | NLE Expert Script | 0.32            ||
 | DQN      | 0.70         | |
