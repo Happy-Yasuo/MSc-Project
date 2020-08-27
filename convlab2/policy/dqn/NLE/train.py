@@ -46,7 +46,7 @@ def sampler(pid, queue, evt, env, policy, batchsz, expert):
     # the final sampled number may be larger than batchsz.
 
     sampled_num = 0
-    traj_len = 20  # max trajectory length
+    traj_len = 40  # max trajectory length
 
     while sampled_num < batchsz:
         # for each trajectory, we reset the env and get initial state
@@ -56,7 +56,7 @@ def sampler(pid, queue, evt, env, policy, batchsz, expert):
             # for expert policy
             s_vec = torch.Tensor(policy.vector.state_vectorize(s))
             if expert:
-                a, a_ind, candidate_act_ind = policy.predict(s)
+                a, a_ind, candidate_act_ind = policy.predict_ind(s)
             else:
                 # [s_dim] => [a_dim]
                 a, a_ind = policy.predict_ind(s)
@@ -192,7 +192,7 @@ def pretrain(env, expert_policy, policy, batchsz, process_num):
     return prefill_buff
 
 
-def train_update(prefill_buff, env, policy, batchsz, epoch, process_num):
+def train_update(prefill_buff, env, policy, batchsz, epoch, domain, process_num):
     seed = epoch
     random.seed(seed)
     np.random.seed(seed)
@@ -238,9 +238,9 @@ def train_update(prefill_buff, env, policy, batchsz, epoch, process_num):
     # decay learning rate
     if policy.scheduler.get_last_lr()[0] > policy.min_lr:
         policy.scheduler.step()
-    if epoch % 10 == 0:
+    if epoch % 20 == 0:
         # save current model
-        policy.save(os.path.join(root_dir, 'convlab2/policy/dqn/NLE/save'), epoch)
+        policy.save(os.path.join(root_dir, 'convlab2/policy/dqn/NLE/save/'+domain), epoch)
 
 
 def generate_necessary_file(root_dir):
@@ -257,6 +257,7 @@ if __name__ == '__main__':
     parser.add_argument("--load_path", type=str, default="", help="path of model to load")
     parser.add_argument("--batchsz", type=int, default=1000, help="batch size of trajactory sampling")
     parser.add_argument("--epoch", type=int, default=2550, help="number of epochs to train")
+    parser.add_argument("--data_set", type=str, default="multiwoz", help="training data domain")
     parser.add_argument("--process_num", type=int, default=1, help="number of processes of trajactory sampling")
     args = parser.parse_args()
 
@@ -268,8 +269,8 @@ if __name__ == '__main__':
     # load policy sys
     policy_sys = DQfD(True)
     policy_sys.load(args.load_path)
-    # rule-based expert
-    expert_policy = NLE()
+    # expert
+    expert_policy = NLE(domain=args.data_set)
     # rule policy
     policy_usr = RulePolicy(character='usr')
     # assemble
@@ -282,4 +283,4 @@ if __name__ == '__main__':
 
     for i in range(args.epoch):
         # train
-        train_update(prefill_buff, env, policy_sys, args.batchsz, i, args.process_num)
+        train_update(prefill_buff, env, policy_sys, args.batchsz, i, args.data_set, args.process_num)
