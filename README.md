@@ -84,10 +84,17 @@ For Scriptbase-j dataset:
 
 
 
-Then we can train the DQfD_NLE by running `train.py` in the same directory.
+Then we can train the DQfD_NLE by running `train.py` in the same directory. By setting '--data_set' with as 'taskmaster' or 'script', we can train DQfD_NLE using out-of-domain data. 
 ```bash
-python train.py
+python train.py --data_set multiwoz
 ```
+
+If we want to try RoFL, run
+```bash
+python train_script_fine_tune.py
+```
+(RoFL for other dataset will be added soon).
+
 
 For evaluating the task success rate and other algorithm performance, run `evaluate.py` in the `policy` directory:
 
