@@ -67,11 +67,11 @@ For Taskmaster dataset:
 For Personachat dataset:
 |  |    |
 | -------------------|----------     |
-|    eval_loss       |        |
-| eval_accuracy             |    |
-| eval_f1 |            |
-| eval_precision |       |
-| eval_recall |   |
+|    eval_loss       |   0.3618     |
+| eval_accuracy             |  0.8389  |
+| eval_f1 |      0.8339      |
+| eval_precision |   0.8607    |
+| eval_recall |  0.8087 |
 
 For Scriptbase-j dataset:
 |  |    |
