@@ -25,20 +25,9 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 def sampler(env, policy, batchsz, expert):
-    """
-    This is a sampler function, and it will be called by multiprocess.Process to sample data from environment by multiple
-    processes.
-    :param pid: process id
-    :param queue: multiprocessing.Queue, to collect sampled data
-    :param evt: multiprocessing.Event, to keep the process alive
-    :param env: environment instance
-    :param policy: policy network, to generate action from current policy
-    :param batchsz: total sampled items
-    :param expert: True/False means if an expert policy is used
-    :return:
-    """
     buff = ExperienceReplayNLE(100000)
-    action_buff = []
+    pos_action_buff = []
+    neg_action_buff = []
 
     # we need to sample batchsz of (state, action, next_state, reward, mask)
     # each trajectory contains `trajectory_len` num of items, so we only need to sample
@@ -92,42 +81,31 @@ def sampler(env, policy, batchsz, expert):
             buff.append(tmp_buff, True)
             real_traj_len += len(tmp_buff.expert_demo)
             if tot_reward >= 45:
-                action_buff += tmp_action_buff
+                pos_action_buff += tmp_action_buff
+            else:
+                neg_action_buff += tmp_action_buff
         # this is end of one trajectory
         sampled_num += real_traj_len
+    if len(neg_action_buff) > len(pos_action_buff):
+        neg_action_buff = random.sample(neg_action_buff, len(pos_action_buff))
+    return buff, pos_action_buff, neg_action_buff
 
-    return buff, action_buff
 
-
-def fine_tune(action_pair_buff, tokenizer, model):
-
-    def artificial(real_usr, real_sys):
-        artificial_usr_utter = []
-        artificial_sys_utter = []
-        num_turn = len(real_usr)
-        for i in range(num_turn):
-            artificial_usr_utter.append(real_usr[i])
-            random_index = random.choice(list(range(i)) + list(range(i + 1, num_turn)))
-            artificial_sys_utter.append(real_sys[random_index])
-        usr_utter = real_usr + artificial_usr_utter
-        sys_utter = real_sys + artificial_sys_utter
-        return usr_utter, sys_utter
-
+def fine_tune(pos_action, neg_action, tokenizer, model):
     nlg_usr = TemplateNLG(is_user=True)
     nlg_sys = TemplateNLG(is_user=False)
-    real_train_usr_utter = []
-    real_train_sys_utter = []
-    for turn in action_pair_buff:
+    train_usr_utter = []
+    train_sys_utter = []
+    train_data = pos_action + neg_action
+    for turn in train_data:
         if turn[0] != [] and turn[1] != []:
             s_u = nlg_usr.generate(turn[0])
             s_a = nlg_sys.generate(turn[1])
-            real_train_usr_utter.append(s_u)
-            real_train_sys_utter.append(s_a)
-
-    train_usr_utter, train_sys_utter = artificial(real_train_usr_utter, real_train_sys_utter)
+            train_usr_utter.append(s_u)
+            train_sys_utter.append(s_a)
 
     train_encoding = tokenizer(train_usr_utter, train_sys_utter, padding=True, truncation=True, max_length=80)
-    train_encoding['label'] = [1] * (len(train_usr_utter)//2) + [0] * (len(train_usr_utter)//2)
+    train_encoding['label'] = [1] * len(pos_action) + [0] * len(neg_action)
     train_dataset = Dataset.from_dict(train_encoding)
     train_dataset.set_format('torch', columns=['input_ids', 'attention_mask', 'label'])
     save_dir = os.path.join(root_dir, 'convlab2/policy/dqn/NLE/save/script_fine_tune')
@@ -149,6 +127,7 @@ def fine_tune(action_pair_buff, tokenizer, model):
       train_dataset=train_dataset,
     )
     trainer.train()
+    trainer.save_model(os.path.join(save_dir, 'fine_tune_checkpoint'))
 
 
 def pretrain(env, expert_policy, policy, batchsz, tokenizer):
@@ -167,24 +146,30 @@ def pretrain(env, expert_policy, policy, batchsz, tokenizer):
     seed = 20200721
 
     fine_tune_cnt = 0
-    action_fine_tune_buff = []
+    pos_fine_tune_buff = []
+    neg_fine_tune_buff = []
     while len(prefill_buff.expert_demo) < pre_train_frames_num:
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
         seed += 1
         # achieve a buffer stored expert demonstrations
-        new_buff, action_pairs = sampler(env, expert_policy, batchsz, True)
-        action_fine_tune_buff += action_pairs
+        new_buff, pos_action_pairs, neg_action_pairs = sampler(env, expert_policy, batchsz, True)
+        pos_fine_tune_buff += pos_action_pairs
+        neg_fine_tune_buff += neg_action_pairs
         cur_frames_num = len(list(new_buff.get_batch().mask))
         cur_success_num = list(new_buff.get_batch().reward).count(80)
         # put expert demonstrations to pre-fill buffer
         prefill_buff.append(new_buff, True)
         logging.debug('<<Replay Buffer>> At this turn, {} frames sampled with {} successful dialogues and {} fine tune '
                       'transitions, now pre-fill buffer has {} transitions in total'.format(cur_frames_num,
-                        cur_success_num, len(action_fine_tune_buff), len(prefill_buff.expert_demo)))
-        if fine_tune_cnt % 5 == 4:
-            fine_tune(action_fine_tune_buff, tokenizer, expert_policy.model)
+                        cur_success_num, len(pos_action_pairs), len(prefill_buff.expert_demo)))
+
+
+        if fine_tune_cnt % 9 == 8:
+            fine_tune(pos_fine_tune_buff, neg_fine_tune_buff, tokenizer, expert_policy.model)
+            fine_tune_checkpoint = os.path.join(root_dir, 'convlab2/policy/dqn/NLE/save/script_fine_tune/fine_tune_checkpoint')
+            expert_policy.model = RobertaForSequenceClassification.from_pretrained(fine_tune_checkpoint).to(device=DEVICE)
             logging.debug(
                 '<<Fine Tune>> Epoch {} with {} successful transitions'.format(fine_tune_cnt, len(action_fine_tune_buff)))
         fine_tune_cnt += 1
@@ -216,13 +201,13 @@ def pretrain(env, expert_policy, policy, batchsz, tokenizer):
     return prefill_buff
 
 
-def train_update(prefill_buff, env, policy, batchsz, epoch, process_num):
+def train_update(prefill_buff, env, policy, batchsz, epoch):
     seed = epoch
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     # achieve a buffer stored real agent experience
-    new_buff = sample(env, policy, batchsz, False, process_num)
+    new_buff, _ = sampler(env, policy, batchsz, False)
     cur_frames_num = len(list(new_buff.get_batch().reward))
     cur_success_num = list(new_buff.get_batch().reward).count(80)
     # put real agent experience to pre-fill buffer while keep total transition number under maximum (100,000)
@@ -309,4 +294,4 @@ if __name__ == '__main__':
     prefill_buff.max_size = 100000
 
     for i in range(args.epoch):
-        train_update(prefill_buff, env, policy_sys, args.batchsz, i, args.process_num)
+        train_update(prefill_buff, env, policy_sys, args.batchsz, i)
