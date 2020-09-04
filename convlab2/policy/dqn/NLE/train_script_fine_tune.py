@@ -94,25 +94,36 @@ def sampler(env, policy, batchsz, expert):
 def fine_tune(pos_action, neg_action, tokenizer, model):
     nlg_usr = TemplateNLG(is_user=True)
     nlg_sys = TemplateNLG(is_user=False)
-    train_usr_utter = []
-    train_sys_utter = []
-    train_data = pos_action + neg_action
-    for turn in train_data:
+    pos_train_usr_utter = []
+    pos_train_sys_utter = []
+    neg_train_usr_utter = []
+    neg_train_sys_utter = []
+
+    for turn in pos_action:
         if turn[0] != [] and turn[1] != []:
             s_u = nlg_usr.generate(turn[0])
             s_a = nlg_sys.generate(turn[1])
-            train_usr_utter.append(s_u)
-            train_sys_utter.append(s_a)
+            pos_train_usr_utter.append(s_u)
+            pos_train_sys_utter.append(s_a)
+    for turn in neg_action:
+        if turn[0] != [] and turn[1] != []:
+            s_u = nlg_usr.generate(turn[0])
+            s_a = nlg_sys.generate(turn[1])
+            neg_train_usr_utter.append(s_u)
+            neg_train_sys_utter.append(s_a)
+
+    train_usr_utter = pos_train_usr_utter + neg_train_usr_utter
+    train_sys_utter = pos_train_sys_utter + neg_train_sys_utter
 
     train_encoding = tokenizer(train_usr_utter, train_sys_utter, padding=True, truncation=True, max_length=80)
-    train_encoding['label'] = [1] * len(pos_action) + [0] * len(neg_action)
+    train_encoding['label'] = [1] * len(pos_train_usr_utter) + [0] * len(neg_train_usr_utter)
     train_dataset = Dataset.from_dict(train_encoding)
     train_dataset.set_format('torch', columns=['input_ids', 'attention_mask', 'label'])
     save_dir = os.path.join(root_dir, 'convlab2/policy/dqn/NLE/save/script_fine_tune')
     log_dir = os.path.join(root_dir, 'convlab2/policy/dqn/NLE/save/script_fine_tune/logs')
     training_args = TrainingArguments(
         output_dir=save_dir,
-        num_train_epochs=1,
+        num_train_epochs=2,
         per_device_train_batch_size=32,
         per_device_eval_batch_size=128,
         warmup_steps=500,
