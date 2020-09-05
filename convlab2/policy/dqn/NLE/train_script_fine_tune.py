@@ -176,13 +176,12 @@ def pretrain(env, expert_policy, policy, batchsz, tokenizer):
                       'transitions, now pre-fill buffer has {} transitions in total'.format(cur_frames_num,
                         cur_success_num, len(pos_action_pairs), len(prefill_buff.expert_demo)))
 
-
-        if fine_tune_cnt % 9 == 8:
+        if fine_tune_cnt % 6 == 5:
             fine_tune(pos_fine_tune_buff, neg_fine_tune_buff, tokenizer, expert_policy.model)
             fine_tune_checkpoint = os.path.join(root_dir, 'convlab2/policy/dqn/NLE/save/script_fine_tune/fine_tune_checkpoint')
             expert_policy.model = RobertaForSequenceClassification.from_pretrained(fine_tune_checkpoint).to(device=DEVICE)
             logging.debug(
-                '<<Fine Tune>> Epoch {} with {} successful transitions'.format(fine_tune_cnt, len(action_fine_tune_buff)))
+                '<<Fine Tune>> Epoch {} with {} successful transitions'.format(fine_tune_cnt, len(pos_action_pairs)))
         fine_tune_cnt += 1
 
     for epoch in range(25):
@@ -208,7 +207,7 @@ def pretrain(env, expert_policy, policy, batchsz, tokenizer):
         logging.debug('<<dialog policy DQfD pre-train>> Epoch {}, learning rate'
                       '{}, loss {}'.format(epoch, policy.scheduler.get_last_lr()[0], pre_train_loss/3000))
         # decay learning rate
-        policy.scheduler.step()
+        # policy.scheduler.step()
     return prefill_buff
 
 
