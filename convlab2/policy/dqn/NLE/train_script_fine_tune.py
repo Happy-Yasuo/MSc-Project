@@ -217,7 +217,7 @@ def train_update(prefill_buff, env, policy, batchsz, epoch):
     np.random.seed(seed)
     torch.manual_seed(seed)
     # achieve a buffer stored real agent experience
-    new_buff, _ = sampler(env, policy, batchsz, False)
+    new_buff, _, _ = sampler(env, policy, batchsz, False)
     cur_frames_num = len(list(new_buff.get_batch().reward))
     cur_success_num = list(new_buff.get_batch().reward).count(80)
     # put real agent experience to pre-fill buffer while keep total transition number under maximum (100,000)
