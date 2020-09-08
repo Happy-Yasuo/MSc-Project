@@ -91,9 +91,10 @@ python train.py --data_set multiwoz
 
 If we want to try RoFL, run
 ```bash
-python train_script_fine_tune.py
+python train_RoFL.py --data_set taskmaster
+python train_RoFL.py --data_set script
+python train_RoFL.py --data_set personachat
 ```
-(RoFL for other dataset will be added soon).
 
 
 For evaluating the task success rate and other algorithm performance, run `evaluate.py` in the `policy` directory:
