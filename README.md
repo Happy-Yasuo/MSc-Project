@@ -145,6 +145,51 @@ As for DQfD, now a rule-based expert is used to generate demonstrations. The hyp
 
 Every 1,000 frames (steps), 3000 batches of size 32 would be sampled to train the model. 
 
+## Performance in terms of task domains
+
+
+NLE Scriptbase
+All 100 0.36                                                                      
+restaurant 44 0.2727272727272727                                                  
+taxi 17 0.4117647058823529                                                        
+hotel 39 0.23076923076923078                                                      
+train 32 0.3125                                                                   
+attraction 27 0.4074074074074074                                                  
+hospital 5 0.4                                                                    
+police 2 0.5      
+
+NLE Scriptbase fine tune
+All 100 0.42                                                                      
+restaurant 44 0.4318181818181818                                                  
+taxi 17 0.29411764705882354                                                       
+hotel 39 0.23076923076923078                                                      
+train 32 0.40625                                                                  
+attraction 27 0.4444444444444444                                                  
+hospital 5 0.0                                                                    
+police 2 0.5
+
+
+NLE Personachat
+All 100 0.42                 
+restaurant 44 0.4090909090909091                                                  
+taxi 17 0.23529411764705882                                                       
+hotel 39 0.23076923076923078                                                      
+train 32 0.3125                                                                    
+attraction 27 0.3333333333333333                                                 
+hospital 5 0.6                                                                    
+police 2 0.5 
+
+NLE Personachat fine tune
+All 100 0.32                                                                      
+restaurant 44 0.18181818181818182                                                 
+taxi 17 0.23529411764705882                                                       
+hotel 39 0.10256410256410256                                                      
+train 32 0.34375                                                                  
+attraction 27 0.25925925925925924                                                 
+hospital 5 1.0                                                                    
+police 2 0.0
+
+
 
 ## Experiment Result
 
@@ -163,4 +208,4 @@ Every 1,000 frames (steps), 3000 batches of size 32 would be sampled to train th
 | DQfD_NLE Taskmaster      | 0.56           | 12.66|
 | DQfD_NLE Script     | 0.59           | 12.78|
 
-The result is highly sensitive to hyper-parameter configurations.
+
