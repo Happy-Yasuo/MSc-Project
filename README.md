@@ -42,25 +42,15 @@ Here is the evaluation result for the trained RoBERTa sequence classifier using 
 | eval_precision | 0.8747     |
 | eval_recall | 0.9469    |
 
-if only train the classifier's parameters,
-|  |    |
-| -------------------|----------     |
-|    eval_loss       |  0.6789      |
-| eval_accuracy             |  0.6137  |
-| eval_f1 | 0.6386    |
-| eval_precision | 0.5999      |
-| eval_recall | 0.6826  |
-
 
 For Taskmaster dataset:
 |  |    |
 | -------------------|----------     |
-|    eval_loss       |  0.2813      |
-| eval_accuracy             |  0.8788  |
-| eval_f1 | 0.8826     |
-| eval_precision | 0.8561      |
-| eval_recall | 0.9107  |
-
+|    eval_loss       |  0.3088     |
+| eval_accuracy             |  0.8613  |
+| eval_f1 | 0.8661     |
+| eval_precision | 0.8374      |
+| eval_recall | 0.8969  |
 
 
 
@@ -146,9 +136,19 @@ As for DQfD, now a rule-based expert is used to generate demonstrations. The hyp
 Every 1,000 frames (steps), 3000 batches of size 32 would be sampled to train the model. 
 
 ## Performance in terms of task domains
+NLE Taskmaster
 
+All 100 0.38                                                                      
+restaurant 44 0.295                                              
+taxi 17 0.294                                                        
+hotel 39 0.205                                                     
+train 32 0.312                                                                  
+attraction 27 0.259                                                 
+hospital 5 0.8                                                                    
+police 2 0.5      
 
 NLE Scriptbase
+
 All 100 0.36                                                                      
 restaurant 44 0.2727272727272727                                                  
 taxi 17 0.4117647058823529                                                        
@@ -159,6 +159,7 @@ hospital 5 0.4
 police 2 0.5      
 
 NLE Scriptbase fine tune
+
 All 100 0.42                                                                      
 restaurant 44 0.4318181818181818                                                  
 taxi 17 0.29411764705882354                                                       
@@ -170,6 +171,7 @@ police 2 0.5
 
 
 NLE Personachat
+
 All 100 0.42                 
 restaurant 44 0.4090909090909091                                                  
 taxi 17 0.23529411764705882                                                       
@@ -180,10 +182,11 @@ hospital 5 0.6
 police 2 0.5 
 
 NLE Personachat fine tune
+
 All 100 0.49                                                                      
 restaurant 44 0.5                                                 
 taxi 17 0.35294117647058826                                                      
-hotel 39 0.0.3076923076923077                                                      
+hotel 39 0.3076923076923077                                                      
 train 32 0.4375                                                                  
 attraction 27 0.5185185185185185                                                 
 hospital 5 0.4                                                                    
