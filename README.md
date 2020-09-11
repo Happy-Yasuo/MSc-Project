@@ -180,16 +180,15 @@ hospital 5 0.6
 police 2 0.5 
 
 NLE Personachat fine tune
-All 100 0.32                                                                      
-restaurant 44 0.18181818181818182                                                 
-taxi 17 0.23529411764705882                                                       
-hotel 39 0.10256410256410256                                                      
-train 32 0.34375                                                                  
-attraction 27 0.25925925925925924                                                 
-hospital 5 1.0                                                                    
-police 2 0.0
-
-
+All 100 0.49                                                                      
+restaurant 44 0.5                                                 
+taxi 17 0.35294117647058826                                                      
+hotel 39 0.0.3076923076923077                                                      
+train 32 0.4375                                                                  
+attraction 27 0.5185185185185185                                                 
+hospital 5 0.4                                                                    
+police 2 1.0
+                                                     
 
 ## Experiment Result
 
