@@ -46,11 +46,12 @@ Here is the evaluation result for the trained RoBERTa sequence classifier using 
 For Taskmaster dataset:
 |  |    |
 | -------------------|----------     |
-|    eval_loss       |  0.3088     |
-| eval_accuracy             |  0.8613  |
+|    eval_loss       |  0.2982     |
+| eval_accuracy             |  0.8670  |
 | eval_f1 | 0.8661     |
-| eval_precision | 0.8374      |
-| eval_recall | 0.8969  |
+| eval_precision | 0.8440     |
+| eval_recall | 0.9004  |
+
 
 
 
@@ -138,13 +139,13 @@ Every 1,000 frames (steps), 3000 batches of size 32 would be sampled to train th
 ## Performance in terms of task domains
 NLE Taskmaster
 
-All 100 0.38                                                                      
-restaurant 44 0.295                                              
-taxi 17 0.294                                                        
-hotel 39 0.205                                                     
-train 32 0.312                                                                  
-attraction 27 0.259                                                 
-hospital 5 0.8                                                                    
+All 100 0.46                                                                      
+restaurant 44 0.43                                              
+taxi 17 0.29                                                       
+hotel 39 0.23                                                     
+train 32 0.43                                                                  
+attraction 27 0.44                                              
+hospital 5 0.4                                                                    
 police 2 0.5      
 
 NLE Scriptbase
