@@ -159,6 +159,8 @@ attraction 27 0.4074074074074074
 hospital 5 0.4                                                                    
 police 2 0.5      
 
+INFO - evaluate.py - evaluate - 260 - All 100 0.39                                                                      INFO - evaluate.py - evaluate - 260 - restaurant 44 0.3181818181818182                                                  INFO - evaluate.py - evaluate - 260 - taxi 17 0.11764705882352941                                                       INFO - evaluate.py - evaluate - 260 - hotel 39 0.2564102564102564                                                       INFO - evaluate.py - evaluate - 260 - train 32 0.40625                                                                  INFO - evaluate.py - evaluate - 260 - attraction 27 0.2962962962962963                                                  INFO - evaluate.py - evaluate - 260 - hospital 5 0.8                                                                    INFO - evaluate.py - evaluate - 260 - police 2 1.0  
+
 NLE Scriptbase fine tune
 
 All 100 0.42                                                                      
