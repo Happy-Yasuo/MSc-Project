@@ -140,7 +140,7 @@ Every 1,000 frames (steps), 3000 batches of size 32 would be sampled to train th
 ## Performance in terms of task domains
 NLE Multiwoz
 |Domain |Number |Success rate |
-| -------------------|----------|
+| ---------|----------|----------|
 |All |100 |0.58|                                                                      
 |restaurant |44 |0.5|                                              
 |taxi |17 |0.47 |                                                      
@@ -153,7 +153,7 @@ NLE Multiwoz
 NLE Taskmaster
 
 |Domain |Number |Success rate |
-| -------------------|----------|
+| ---------|----------|----------|
 |All |100 |0.51|                                                                      
 |restaurant |44 |0.40|                                              
 |taxi |17 |0.41 |                                                      
@@ -167,7 +167,7 @@ NLE Taskmaster
 NLE Scriptbase
 
 |Domain |Number |Success rate |
-| -------------------|----------|
+| --------|-----------|----------|
 |All |100 |0.39|                                                                      
 |restaurant |44 |0.31|                                              
 |taxi |17 |0.11 |                                                      
