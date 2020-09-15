@@ -137,6 +137,17 @@ As for DQfD, now a rule-based expert is used to generate demonstrations. The hyp
 Every 1,000 frames (steps), 3000 batches of size 32 would be sampled to train the model. 
 
 ## Performance in terms of task domains
+NLE Multiwoz
+
+All 100 0.58                                                                      
+restaurant 44 0.5                                              
+taxi 17 0.47                                                       
+hotel 39 0.38                                                     
+train 32 0.56                                                                  
+attraction 27 0.51                                             
+hospital 5 1.0                                                                    
+police 2 0.5  
+
 NLE Taskmaster
 
 All 100 0.46                                                                      
