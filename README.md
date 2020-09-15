@@ -139,48 +139,53 @@ Every 1,000 frames (steps), 3000 batches of size 32 would be sampled to train th
 
 ## Performance in terms of task domains
 NLE Multiwoz
-
-All 100 0.58                                                                      
-restaurant 44 0.5                                              
-taxi 17 0.47                                                       
-hotel 39 0.38                                                     
-train 32 0.56                                                                  
-attraction 27 0.51                                             
-hospital 5 1.0                                                                    
-police 2 0.5  
+|Domain |Number |Success rate |
+| -------------------|----------|
+|All |100 |0.58|                                                                      
+|restaurant |44 |0.5|                                              
+|taxi |17 |0.47 |                                                      
+|hotel |39 |0.38 |                                                    
+|train |32 |0.56  |                                                                
+|attraction |27 |0.51|                                             
+|hospital |5 |1.0     |                                                               
+|police |2 |0.5  |
 
 NLE Taskmaster
 
-All 100 0.46                                                                      
-restaurant 44 0.43                                              
-taxi 17 0.29                                                       
-hotel 39 0.23                                                     
-train 32 0.43                                                                  
-attraction 27 0.44                                              
-hospital 5 0.4                                                                    
-police 2 0.5      
- All 100 0.51                                                                      INFO - evaluate.py - evaluate - 260 - restaurant 44 0.4090909090909091                                                  INFO - evaluate.py - evaluate - 260 - taxi 17 0.4117647058823529                                                        INFO - evaluate.py - evaluate - 260 - hotel 39 0.3076923076923077                                                       INFO - evaluate.py - evaluate - 260 - train 32 0.4375                                                                   INFO - evaluate.py - evaluate - 260 - attraction 27 0.48148148148148145                                                 INFO - evaluate.py - evaluate - 260 - hospital 5 1.0                                                                    INFO - evaluate.py - evaluate - 260 - police 2 1.0   
+|Domain |Number |Success rate |
+| -------------------|----------|
+|All |100 |0.51|                                                                      
+|restaurant |44 |0.40|                                              
+|taxi |17 |0.41 |                                                      
+|hotel |39 |0.30 |                                                    
+|train |32 |0.43  |                                                                
+|attraction |27 |0.48|                                             
+|hospital |5 |1.0     |                                                               
+|police |2 |1.0  |
+   
+
 NLE Scriptbase
 
-All 100 0.36                                                                      
-restaurant 44 0.2727272727272727                                                  
-taxi 17 0.4117647058823529                                                        
-hotel 39 0.23076923076923078                                                      
-train 32 0.3125                                                                   
-attraction 27 0.4074074074074074                                                  
-hospital 5 0.4                                                                    
-police 2 0.5      
-
-INFO - evaluate.py - evaluate - 260 - All 100 0.39                                                                      INFO - evaluate.py - evaluate - 260 - restaurant 44 0.3181818181818182                                                  INFO - evaluate.py - evaluate - 260 - taxi 17 0.11764705882352941                                                       INFO - evaluate.py - evaluate - 260 - hotel 39 0.2564102564102564                                                       INFO - evaluate.py - evaluate - 260 - train 32 0.40625                                                                  INFO - evaluate.py - evaluate - 260 - attraction 27 0.2962962962962963                                                  INFO - evaluate.py - evaluate - 260 - hospital 5 0.8                                                                    INFO - evaluate.py - evaluate - 260 - police 2 1.0  
+|Domain |Number |Success rate |
+| -------------------|----------|
+|All |100 |0.39|                                                                      
+|restaurant |44 |0.31|                                              
+|taxi |17 |0.11 |                                                      
+|hotel |39 |0.25 |                                                    
+|train |32 |0.40  |                                                                
+|attraction |27 |0.29|                                             
+|hospital |5 |0.8     |                                                               
+|police |2 |1.0  |
+   
 
 NLE Scriptbase fine tune
 
 All 100 0.42                                                                      
-restaurant 44 0.4318181818181818                                                  
-taxi 17 0.29411764705882354                                                       
-hotel 39 0.23076923076923078                                                      
-train 32 0.40625                                                                  
-attraction 27 0.4444444444444444                                                  
+restaurant 44 0.43                                              
+taxi 17 0.29                                                    
+hotel 39 0.23                                                  
+train 32 0.40                                                                 
+attraction 27 0.44                                               
 hospital 5 0.0                                                                    
 police 2 0.5
 
@@ -188,11 +193,11 @@ police 2 0.5
 NLE Personachat
 
 All 100 0.42                 
-restaurant 44 0.4090909090909091                                                  
-taxi 17 0.23529411764705882                                                       
-hotel 39 0.23076923076923078                                                      
-train 32 0.3125                                                                    
-attraction 27 0.3333333333333333                                                 
+restaurant 44 0.40                                                 
+taxi 17 0.23                                                    
+hotel 39 0.23                                                 
+train 32 0.31                                                                 
+attraction 27 0.33                                             
 hospital 5 0.6                                                                    
 police 2 0.5 
 
@@ -200,10 +205,10 @@ NLE Personachat fine tune
 
 All 100 0.49                                                                      
 restaurant 44 0.5                                                 
-taxi 17 0.35294117647058826                                                      
-hotel 39 0.3076923076923077                                                      
-train 32 0.4375                                                                  
-attraction 27 0.5185185185185185                                                 
+taxi 17 0.35                                                    
+hotel 39 0.30                                               
+train 32 0.43                                                                
+attraction 27 0.51                                               
 hospital 5 0.4                                                                    
 police 2 1.0
                                                      
