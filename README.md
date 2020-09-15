@@ -36,11 +36,12 @@ python train_NLE.py
 Here is the evaluation result for the trained RoBERTa sequence classifier using Multiwoz 2.1 dataset:
 |  |    |
 | -------------------|----------     |
-|    eval_loss       |   0.2517      |
-| eval_accuracy             |  0.9056    |
-| eval_f1 | 0.9093     |
-| eval_precision | 0.8747     |
-| eval_recall | 0.9469    |
+|    eval_loss       |   0.2170     |
+| eval_accuracy             |  0.9193   |
+| eval_f1 | 0.9218     |
+| eval_precision | 0.8936    |
+| eval_recall | 0.9519   |
+
 
 
 For Taskmaster dataset:
