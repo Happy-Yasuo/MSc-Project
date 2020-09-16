@@ -192,14 +192,18 @@ police 2 0.5
 
 NLE Personachat
 
-All 100 0.42                 
-restaurant 44 0.40                                                 
-taxi 17 0.23                                                    
-hotel 39 0.23                                                 
-train 32 0.31                                                                 
-attraction 27 0.33                                             
-hospital 5 0.6                                                                    
-police 2 0.5 
+
+|Domain |Number |Success rate |
+| --------|-----------|----------|
+|All |100 |0.43|                                                                      
+|restaurant |44 |0.38|                                              
+|taxi |17 |0.17 |                                                      
+|hotel |39 |0.25 |                                                    
+|train |32 |0.34  |                                                                
+|attraction |27 |0.29|                                             
+|hospital |5 |1.0     |                                                               
+|police |2 |0.5  |
+
 
 NLE Personachat fine tune
 
