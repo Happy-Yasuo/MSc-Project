@@ -230,7 +230,7 @@ police 2 1.0
 | NLE Expert Script | 0.32            ||
 | DQN      | 0.70         | |
 | DQfD_RE      | 0.78           | 21.05 |
-| DQfD_NLE      | 0.76           | 19.56|
+| DQfD_NLE      | 0.77           | 18.93|
 | DQfD_NLE Taskmaster      | 0.56           | 12.66|
 | DQfD_NLE Script     | 0.59           | 12.78|
 
