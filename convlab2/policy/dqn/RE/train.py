@@ -173,11 +173,11 @@ def pretrain(env, expert_policy, policy, vector, act2ind_dict, batchsz, process_
     :return:
     """
     # initialize pre-fill replay buffer
-    prefill_buff = ExperienceReplay(25000)
+    prefill_buff = ExperienceReplay(30000)
     sampled_frames_num = 0  # sampled number of frames
     sampled_success_num = 0  # sampled number of dialogs
-    pre_train_frames_num = 25000  # total number of dialogs required to sample
-    seed = 20200721
+    pre_train_frames_num = 30000  # total number of dialogs required to sample
+    seed = 20200916
     while len(prefill_buff.expert_demo) < pre_train_frames_num:
         random.seed(seed)
         np.random.seed(seed)
@@ -212,8 +212,6 @@ def pretrain(env, expert_policy, policy, vector, act2ind_dict, batchsz, process_
         policy.update_net()
         logging.debug('<<dialog policy DQfD pre-train>> Epoch {}, learning rate '
                       '{}, loss {}'.format(epoch, policy.scheduler.get_last_lr()[0], pre_train_loss/3000))
-        # decay learning rate
-        policy.scheduler.step()
     return prefill_buff
 
 
@@ -262,7 +260,7 @@ def train_update(prefill_buff, env, policy, vector, act2ind_dict, batchsz, epoch
     # decay learning rate
     if policy.scheduler.get_last_lr()[0] > policy.min_lr:
         policy.scheduler.step()
-    if epoch % 10 == 0:
+    if epoch % 20 == 0:
         # save current model
         policy.save(os.path.join(root_dir, 'convlab2/policy/dqn/RE/save'), epoch)
 
@@ -298,7 +296,7 @@ if __name__ == '__main__':
     policy_usr = RulePolicy(character='usr')
     # assemble
     simulator = PipelineAgent(None, None, policy_usr, None, 'user')
-
+    # evaluator = MultiWozEvaluator()
     env = Environment(None, simulator, None, dst_sys)
     # pre-train
     prefill_buff = pretrain(env, expert_policy, policy_sys, vector, act2ind_dict, args.batchsz, args.process_num)
