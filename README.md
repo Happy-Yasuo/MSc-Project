@@ -232,6 +232,7 @@ police 2 1.0
 | DQfD_RE      | 0.78           | 21.05 |
 | DQfD_NLE      | 0.77           | 18.93|
 | DQfD_NLE Taskmaster      | 0.78           | 20.80|
+| DQfD_NLE Personachat      | 0.8          | 21.06|
 | DQfD_NLE Script     | 0.75           | 21.25|
 
 
