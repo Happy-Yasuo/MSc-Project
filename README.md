@@ -151,6 +151,14 @@ NLE Multiwoz
 |police |2 |0.5  |
 
 NLE Taskmaster
+All 100 0.48                                                                      
+restaurant 44 0.45454545454545453                                                 
+taxi 17 0.23529411764705882                                                       
+hotel 39 0.3076923076923077                                                       
+train 32 0.3125                                                                   
+attraction 27 0.2962962962962963                                                  
+hospital 5 1.0                                                                    
+police 2 1.0  
 
 |Domain |Number |Success rate |
 | ---------|----------|----------|
